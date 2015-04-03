@@ -1,11 +1,11 @@
 package parser;
 
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
+
+
 import java.io.FileInputStream;
 import java.io.InputStream;
-
-
-
-
 
 public class ANTLR {
     public static void main(String[] args) throws Exception {
@@ -25,6 +25,7 @@ public class ANTLR {
 			
 	        // create a lexer that feeds off of input CharStream
 	        SqlLexer lexer = new SqlLexer(input);
+	
 	        // create a buffer of tokens pulled from the lexer
 	        CommonTokenStream tokens = new CommonTokenStream(lexer);
 	

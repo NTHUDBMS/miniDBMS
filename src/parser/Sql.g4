@@ -2,11 +2,15 @@ grammar Sql;
 
 @header{
 
-package src;
+package parser;
 import java.util.*;
 import manageDatabase.*;
 import structure.*;
 
+}
+
+@member{
+	
 }
 
 //-----------------------Grammer Rules------------------------
@@ -28,6 +32,7 @@ create_table
 		
 attribute_list
 	:	(attribute COMMA)* primary_key (COMMA attribute)*
+	|	attribute (COMMA attribute)*
 	;
 
 

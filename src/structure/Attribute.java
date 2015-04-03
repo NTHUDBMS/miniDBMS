@@ -1,7 +1,10 @@
 package structure;
 import java.io.Serializable;
 
-
+/**
+ * 
+ * 
+ */
 public class Attribute implements Serializable {
 private static final long serialVersionUID = 1L;
 	
