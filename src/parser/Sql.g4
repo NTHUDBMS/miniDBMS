@@ -1,15 +1,26 @@
 grammar Sql;
 
 @header{
-
-package parser;
 import java.util.*;
+import java.io.*;
 import manageDatabase.*;
 import structure.*;
-
+import dbms.*;
 }
 
-@member{
+@members{
+	
+	private final static int maxTuple = 100;
+	private final static int maxAttr = 5;
+	private DBExecutor DBE;
+	
+	public static void pause(){
+		System.out.println("Press Enter to continue.");
+		try{
+			System.in.read();
+		}catch(Exception e){};
+	}
+	
 	
 }
 
@@ -31,13 +42,17 @@ create_table
 	;
 		
 attribute_list
-	:	(attribute COMMA)* primary_key (COMMA attribute)*
-	|	attribute (COMMA attribute)*
+	locals[int i=0]
+	:	(attribute COMMA {$i++;})* primary_key {$i++;} (COMMA attribute {$i++;})*
+		{$i<=maxAttr}?<fail={"Query exceeded max attribute of "+maxAttr}>{
+			
+		}
+	|	attribute {$i++;} (COMMA attribute {$i++;})*
 	;
 
 
 primary_key
-	:	attribute PRIMARY KEY
+	:	attribute PRIMARY KEY{}
 	;
 
 attribute
@@ -45,12 +60,13 @@ attribute
 	;
 
 types
-	:	(INT|VARCHAR) length?
-	;
+	:	(INT|VARCHAR) length?{
+		
+	};
 	
 length
-	:	LPARSE int_len RPARSE
-	;
+	:	LPARSE int_len RPARSE{
+	};
 
 int_len returns [Object value]
 	:	x=type_int {$value = $x.value;}
@@ -58,8 +74,12 @@ int_len returns [Object value]
 	
 
 insert_into
-	:	INSERT INTO table_name LPARSE colomn_name (COMMA colomn_name)* RPARSE
+	:	INSERT INTO table_name colomn_declare?
 		VALUES LPARSE consts (COMMA consts)* RPARSE
+	;
+
+colomn_declare
+	:	LPARSE colomn_name (COMMA colomn_name)* RPARSE
 	;
 
 select_from
@@ -119,72 +139,85 @@ op
 
 
 colomn_name returns [String value]
-	:	x=IDENTIFIER {$value = new String($x.text);}
-	;
+	:	x=IDENTIFIER {
+		$value = new String($x.text);
+		DBMS.dump($x.text);
+	};
   
 colomn_alias_name returns [String value]
-	:	x=IDENTIFIER {$value = new String($x.text);}
-	;
+	:	x=IDENTIFIER {
+		$value = new String($x.text);
+		DBMS.dump($x.text);
+	};
   
 table_name returns [String value]
-	:	x=IDENTIFIER {$value = new String($x.text);}
-	;
+	:	x=IDENTIFIER {
+		$value = new String($x.text);
+		DBMS.dump($x.text);
+	};
   
 table_alias_name returns [String value]
-	:	x=IDENTIFIER {$value = new String($x.text);}
-	;
+	:	x=IDENTIFIER {
+		$value = new String($x.text);
+		DBMS.dump($x.text);
+	};
   
 type_int returns [Integer value] 
-	:	x=INT_IDENTI {$value = new Integer($x.text);}
-	;
+	:	x=INT_IDENTI {
+		$value = new Integer($x.text);
+		DBMS.dump($x.text);
+	};
   
 type_varchar returns [String value] 
-	:	x=VARCHAR_IDENTI {$value = new String($x.text);}
-	;
+	:	x=VARCHAR_IDENTI {
+		$value = new String($x.text);
+		DBMS.dump($x.text);
+	};
 
 ALTER   : A L T E R;
-AS      : A S;
-CREATE  : C R E A T E;
+AS      : A S              { DBMS.dump("AS");};
+CREATE  : C R E A T E      { DBMS.dump("CREATE");};
 DATABASE: D A T A B A S E;
 DELETE  : D E L E T E;
 DOUBLE  : D O U B L E;
 DROP    : D R O P;
 EXISTS  : E X I S T S;
 FOREIGN : F O R E I G N;
-FROM    : F R O M;
+FROM    : F R O M          { DBMS.dump("FROM");};
 IF      : I F;
 IN      : I N;
-INSERT  : I N S E R T;
-INT     : I N T;
-INTO    : I N T O;
-KEY     : K E Y;
+INSERT  : I N S E R T      { DBMS.dump("INSERT");};
+INT     : I N T            { DBMS.dump("INT");};
+INTO    : I N T O          { DBMS.dump("INTO");};
+KEY     : K E Y            { DBMS.dump("KEY");};
 NOT     : N O T;
 NULL    : N U L L;
 ON      : O N;
-PRIMARY : P R I M A R Y;
-REFERENCES : R E F E R E N C E S;
-SELECT  : S E L E C T;
+PRIMARY : P R I M A R Y    { DBMS.dump("PRIMARY");};
+REFERENCES: R E F E R E N C E S;
+SELECT  : S E L E C T      { DBMS.dump("SELECT");};
 SET     : S E T;
-VARCHAR : V A R C H A R;
-TABLE   : T A B L E;
+VARCHAR : V A R C H A R    { DBMS.dump("VARCHAR");};
+TABLE   : T A B L E        { DBMS.dump("TABLE");};
 UPDATE  : U P D A T E;
 USE     : U S E;
-VALUES  : V A L U E S;
-WHERE   : W H E R E;
-AND 	: A N D;
-OR  	: O R;
+VALUES  : V A L U E S      { DBMS.dump("VALUES");};
+WHERE   : W H E R E        { DBMS.dump("WHERE");};
+AND 	: A N D            { DBMS.dump("AND");};
+OR  	: O R              { DBMS.dump("OR");};
 
 IDENTIFIER
 	: [a-zA-Z_][a-zA-Z_0-9]*;
 	
 INT_IDENTI
-    : [0-9]+;
+    : DIGIT+;
     
 DOUBLE_IDENTI
-    :  ([0-9]+('.'[0-9])?)|(([0-9])*'.'[0-9]);
+    :	(DIGIT+('.'DIGIT)?)
+    |	((DIGIT)*'.'DIGIT);
     
 VARCHAR_IDENTI
-    : '\''[^']*'\'';
+    : ('\'')~[\r\n]*('\'');
 
 SINGLE_LINE_COMMENT
 	: '--' ~[\r\n]* -> channel(HIDDEN);
@@ -192,11 +225,16 @@ SINGLE_LINE_COMMENT
 MULTILINE_COMMENT
 	: '/*' .*? ( '*/' | EOF ) -> channel(HIDDEN);
 
-SPACES
-	: [ \t\u000B\t\r\n] -> channel(HIDDEN);
+TABS
+	: [\t\u000B] {DBMS.dump("\t");} -> channel(HIDDEN);
+	
+SPACE
+	: [ ] {DBMS.dump(" ");} -> channel(HIDDEN);
+	
+NEWLINE
+	: '\r'?'\n'  {DBMS.dump("\n");} -> channel(HIDDEN);
 
 fragment DIGIT : [0-9];
-
 fragment A : [aA];
 fragment B : [bB];
 fragment C : [cC];
@@ -224,25 +262,25 @@ fragment X : [xX];
 fragment Y : [yY];
 fragment Z : [zZ];
 
-SCOL   : ';';
-DOT    : '.';
-LPARSE : '(';
-RPARSE : ')';
-COMMA  : ',';
-STAR   : '*';
+SCOL   : ';' {DBMS.dump(";");};
+DOT    : '.' {DBMS.dump(".");};
+LPARSE : '(' {DBMS.dump("(");};
+RPARSE : ')' {DBMS.dump(")");};
+COMMA  : ',' {DBMS.dump(",");};
+STAR   : '*' {DBMS.dump("*");};
 PLUS   : '+';
 MINUS  : '-';
 TILDE  : '~';
 PIPE2  : '||';
 DIV    : '/';
 MOD    : '%';
-LT2    : '<<';
-GT2    : '>>';
+LSHIFT : '<<';
+RSHIFT : '>>';
 AMP    : '&';
 PIPE   : '|';
-LT     : '<';
+LT     : '<' {DBMS.dump("<");};
 LT_EQ  : '<=';
-GT     : '>';
+GT     : '>' {DBMS.dump(">");};
 GT_EQ  : '>=';
-EQ     : '=';
-NOT_EQ : '<>';
+EQ     : '=' {DBMS.dump("=");};
+NOT_EQ : '<>' {DBMS.dump("<>");};
