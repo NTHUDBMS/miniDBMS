@@ -1,11 +1,19 @@
 grammar Sql;
 
 @header{
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //!!!                                                            !!!
+    //!!! THIS CODE IS AUTOMATICALLY GENERATED! DO NOT MODIFY!       !!!
+    //!!! Please refer to file Example.g4 for grammar documentation. !!!
+    //!!!                                                            !!!
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
 import java.util.*;
 import java.io.*;
 import manageDatabase.*;
 import structure.*;
 import dbms.*;
+
 }
 
 @members{
@@ -24,7 +32,7 @@ import dbms.*;
 	
 }
 
-//-----------------------Grammer Rules------------------------
+//-----------------------Grammar Rules------------------------
 
 start
 	:	(instructions ';')* EOF
@@ -44,10 +52,13 @@ create_table
 attribute_list
 	locals[int i=0]
 	:	(attribute COMMA {$i++;})* primary_key {$i++;} (COMMA attribute {$i++;})*
-		{$i<=maxAttr}?<fail={"Query exceeded max attribute of "+maxAttr}>{
+		{$i<=maxAttr}?<fail={"Query exceeded max attribute of "+maxAttr}> // grammar prediction
+		{
 			
 		}
-	|	attribute {$i++;} (COMMA attribute {$i++;})*
+	|	attribute {$i++;} (COMMA attribute {$i++;})*{
+			
+		}
 	;
 
 
@@ -66,6 +77,7 @@ types
 	
 length
 	:	LPARSE int_len RPARSE{
+		
 	};
 
 int_len returns [Object value]
@@ -74,6 +86,7 @@ int_len returns [Object value]
 	
 
 insert_into
+	locals[int i=1]
 	:	INSERT INTO table_name colomn_declare?
 		VALUES LPARSE consts (COMMA consts)* RPARSE
 	;
