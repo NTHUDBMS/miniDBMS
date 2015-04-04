@@ -64,6 +64,7 @@ attribute_list
 
 primary_key
 	:	attribute PRIMARY KEY{}
+	
 	;
 
 attribute
