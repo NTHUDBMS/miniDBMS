@@ -14,7 +14,8 @@ import parser.*;
  *     In this project, we use the tool : ANTLR
  * (vertion 4.5) to generate the lexer & parser.<br>
  * input the ".sql" file as the program argument
- * and our DBMS will start process the SQL queries.<br>
+ * and our DBMS will start process the SQL queries.
+ * use absolute path of test.sql <br> 
  */
 public class DBMS {
 	public final static Boolean dumpParsingMsg = true;
@@ -38,7 +39,9 @@ public class DBMS {
     	
     	
 		if ( args.length>0 ){
+			
 			inputFile = args[0];
+			
 			
 			InputStream is;
 			
@@ -65,7 +68,7 @@ public class DBMS {
 		        System.out.println("----------Start Parsing-------------");
 		        parser.start();
 		        ParseTree tree = parser.start(); // begin parsing at start rule
-		        //System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+		        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
 		        os.close();
 		        System.out.println("-----------End Parsing--------------");
 		        
