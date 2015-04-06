@@ -14,14 +14,39 @@ import manageDatabase.*;
 import structure.*;
 import dbms.*;
 
+
 }
 
 @members{
 	
 	private final static int maxTuple = 100;
 	private final static int maxAttr = 5;
-	private DBExecutor DBE;
+	public static void execute(Query query){
+		DBExecutor executor;
+		executor = new DBExecutor();
+		while(true)
+		{
+
+		    	try{
+   					query = Query(); 
+		    		if (query != null) {
+		    			executor.execute(query);
+		    		}
+		    	}
+				catch (ParseExctoption ex)
+				{
+					System.err.println(ex.getMessage());
+					return;
+				}
+				catch (Error ex)
+				{
+					System.err.println(ex.getMessage());
+					return;
+				}
+			}
+		}   	
 	
+
 	public static void pause(){
 		System.out.println("Press Enter to continue.");
 		try{
@@ -31,69 +56,153 @@ import dbms.*;
 	
 	
 }
-
-//-----------------------Grammar Rules------------------------
-
-start
-	:	(instructions ';')* EOF
-	;
-
-instructions
-	:	create_table
-	|	select_from
-	|	insert_into	
-	;
-
-
-create_table
-	:	CREATE TABLE table_name LPARSE attribute_list RPARSE
-	;
-		
-attribute_list
-	locals[int i=0]
-	:	(attribute COMMA {$i++;})* primary_key {$i++;} (COMMA attribute {$i++;})*
-		{$i<=maxAttr}?<fail={"Query exceeded max attribute of "+maxAttr}> // grammar prediction
+start 
+	locals[
+			Query query = new Query();
+			query = null;
+		]
+	:	(instructions 
 		{
-			
+			query = $instructions.query;
+			execute(query);
 		}
-	|	attribute {$i++;} (COMMA attribute {$i++;})*{
-			
+		';')* EOF
+	;
+
+instructions returns[Query query]
+	:	
+		create_table {$query = $create_table.query;}
+	|	select_from  
+	|	insert_into	{$query = $insert_into.query;}
+	;
+
+create_table returns [Query query]
+ 	locals [
+ 	String tableName,
+	String attrName,
+	Attribute _attribute,
+	Attribute.Type type,
+	int lengthToken,
+	ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
+	ArrayList <Integer> primaryList = new ArrayList <Integer> (),
+	Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>()
+	]
+	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
+		LPARSE attribute_list RPARSE
+		{$query = new Create($tableName, $attrList, $primaryList, $attrPosTable);}
+	;
+
+
+attribute_list
+	:	(attribute COMMA )* primary_key (COMMA attribute )*
+	|	attribute (COMMA attribute )*
+	;
+
+
+attribute 
+	/*@init{
+		String attrName;
+		ArrayList <Attribute> attrList = new ArrayList <Attribute>(); //not local
+	  	Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(); //not local
+	  	Attribute attribute; //not local
+	  	Attribute.Type type;
+	}*/
+	:	colomn_name types {
+		String attrName = $colomn_name.value;
+		Attribute attribute = new Attribute(create_table::type, create_table::attrName);
+		//not check condition
+		if (!create_table::attrList.contains(create_table::attribute)) {
+			create_table::attrPosTable.put(create_table::attrName, Integer.valueOf(create_table::attrList.size()));
+			create_table::attrList.add(create_table::attribute);
 		}
+		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
+	}
 	;
 
 
-primary_key
-	:	attribute PRIMARY KEY{}
-	
-	;
+primary_key 
+	/*@init{
+		String attrName;
+		ArrayList <Attribute> attrList = new ArrayList <Attribute>();
+	  	Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>();
+	 	ArrayList <Integer> primaryList = new ArrayList <Integer> (); //not local
+	   	Attribute attribute; //not local
 
-attribute
-	:	colomn_name types
-	;
-
-types
-	:	(INT|VARCHAR) length?{
+	}*/
+	:	colomn_name types PRIMARY KEY{
+		create_table::attrName = create_table::colomn_name.value;
+		if (! create_table::attrList.contains(create_table::attribute)) {
+			create_table::attrList.add(create_table::attribute);
+			//save position of attribute name 
+			create_table::attrPosTable.put(create_table::attrName, Integer.valueOf(create_table::attrList.size()));
+		}
+		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		
-	};
+		if (!create_table::primaryList.contains(create_table::attrName) {
+			//save position of attribute in primary list
+			create_table::primaryList.add(create_table::attrPosTable.get(create_table::attrName));
+		}
+		else throw new Error ("CREATE TABLE: INVALID PRIMARY KEY " + create_table::attrName);
+	}
+	;
+
+types	
+	/*@init{Attribute.Type type;
+		  Attribute attribute; //not local
+		 }*/
+	:	(INT     {create_table::type = Attribute.Type.INT;}  
+		|VARCHAR {create_table::type = Attribute.Type.CHAR;}
+
+		) length? {create_table::attribute.setLength($length.lengthToken);}
+		;
 	
-length
-	:	LPARSE int_len RPARSE{
-		
-	};
+length returns [Integer lengthToken]
+	:	LPARSE int_len { $lengthToken = $int_len.value;} RPARSE
+	;
 
 int_len returns [Object value]
 	:	x=type_int {$value = $x.value;}
 	;
 	
 
-insert_into
-	locals[int i=1]
-	:	INSERT INTO table_name colomn_declare?
-		VALUES LPARSE consts (COMMA consts)* RPARSE
+insert_into returns [Query query]
+	@init {int i = 0;
+		   int tempPosition;} //iterator for List <int> attrPosition 
+	:	INSERT INTO 
+		{
+			String tableName;
+			ArrayList <String> valueList = new ArrayList <String>();
+		}
+		table_name {tableName = $table_name.value;}
+		VALUES LPARSE consts {valueList.add(consts.value);} 
+		(COMMA consts {valueList.add(consts.value); } )* RPARSE
+		{query = new Insert(tableName, valueList); }
+		
+		|  
+
+		INSERT INTO 
+		{
+			String tableName;
+			ArrayList <String> valueList = new ArrayList <String>();
+		}
+		table_name {tableName = $table_name.value;} colomn_declare
+		VALUES LPARSE consts 
+		{	
+			tempPosition = $colomn_declare.attrPosition.remove(i++);
+			if( tempPosition <= valueList.size())
+				valueList.add(tempPosition,consts.value); 
+				//add at specific index, after that index(include)
+				// would shift
+			else valueList.add(consts.value);//just add at end
+		}
+		(COMMA consts {valueList.add(consts.value); } )* RPARSE
+		{query = new Insert(tableName, valueList); }
 	;
 
-colomn_declare
-	:	LPARSE colomn_name (COMMA colomn_name)* RPARSE
+colomn_declare returns[List <int> attrPosition] //return manual input position of values
+	@init {attrPosition = new ArrayList <int> ();}
+	:	LPARSE colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));}
+	 (COMMA colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));} )* RPARSE
 	;
 
 select_from
@@ -190,7 +299,12 @@ type_varchar returns [String value]
 
 ALTER   : A L T E R;
 AS      : A S              { DBMS.dump("AS");};
-CREATE  : C R E A T E      { DBMS.dump("CREATE");};
+CREATE  : C R E A T E      { 
+	DBMS.dump("CREATE");
+	
+
+
+};
 DATABASE: D A T A B A S E;
 DELETE  : D E L E T E;
 DOUBLE  : D O U B L E;
