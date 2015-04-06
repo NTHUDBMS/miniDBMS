@@ -28,16 +28,10 @@ import dbms.*;
 		{
 
 		    	try{
-   					query = Query(); 
 		    		if (query != null) {
 		    			executor.execute(query);
 		    		}
 		    	}
-				catch (ParseExctoption ex)
-				{
-					System.err.println(ex.getMessage());
-					return;
-				}
 				catch (Error ex)
 				{
 					System.err.println(ex.getMessage());
@@ -104,16 +98,16 @@ attribute
 		String attrName;
 		ArrayList <Attribute> attrList = new ArrayList <Attribute>(); //not local
 	  	Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(); //not local
-	  	Attribute attribute; //not local
+	  	Attribute attribute; 
 	  	Attribute.Type type;
 	}*/
 	:	colomn_name types {
-		String attrName = $colomn_name.value;
-		Attribute attribute = new Attribute(create_table::type, create_table::attrName);
+		String _attrName = $colomn_name.value;
+		Attribute _attribute = new Attribute($types.type, _attrName);
 		//not check condition
-		if (!create_table::attrList.contains(create_table::attribute)) {
-			create_table::attrPosTable.put(create_table::attrName, Integer.valueOf(create_table::attrList.size()));
-			create_table::attrList.add(create_table::attribute);
+		if (! $create_table::attrList.contains(_attribute)) {
+			create_table::attrPosTable.put(_attrName, Integer.valueOf(create_table::attrList.size()));
+			create_table::attrList.add(_attribute);
 		}
 		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 	}
@@ -130,30 +124,30 @@ primary_key
 
 	}*/
 	:	colomn_name types PRIMARY KEY{
-		create_table::attrName = create_table::colomn_name.value;
-		if (! create_table::attrList.contains(create_table::attribute)) {
-			create_table::attrList.add(create_table::attribute);
+		Attribute _attribute = new Attribute($types.type, $colomn_name.value);
+		if (! create_table::attrList.contains(_attribute)) {
+			create_table::attrList.add(_attribute);
 			//save position of attribute name 
-			create_table::attrPosTable.put(create_table::attrName, Integer.valueOf(create_table::attrList.size()));
+			create_table::attrPosTable.put($colomn_name.value, Integer.valueOf(create_table::attrList.size()));
 		}
 		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		
-		if (!create_table::primaryList.contains(create_table::attrName) {
+		if (!create_table::primaryList.contains($colomn_name.value) {
 			//save position of attribute in primary list
-			create_table::primaryList.add(create_table::attrPosTable.get(create_table::attrName));
+			create_table::primaryList.add(create_table::attrPosTable.get($colomn_name.value));
 		}
-		else throw new Error ("CREATE TABLE: INVALID PRIMARY KEY " + create_table::attrName);
+		else throw new Error ("CREATE TABLE: INVALID PRIMARY KEY " + $colomn_name.value);
 	}
 	;
 
-types	
+types	returns[Attribute.Type type]
 	/*@init{Attribute.Type type;
 		  Attribute attribute; //not local
 		 }*/
-	:	(INT     {create_table::type = Attribute.Type.INT;}  
-		|VARCHAR {create_table::type = Attribute.Type.CHAR;}
+	:	(INT     {$type = Attribute.Type.INT;}  
+		|VARCHAR {$type = Attribute.Type.CHAR;}
 
-		) length? {create_table::attribute.setLength($length.lengthToken);}
+		) length? {create_table::_attribute.setLength($length.lengthToken);}
 		;
 	
 length returns [Integer lengthToken]
@@ -199,8 +193,8 @@ insert_into returns [Query query]
 		{query = new Insert(tableName, valueList); }
 	;
 
-colomn_declare returns[List <int> attrPosition] //return manual input position of values
-	@init {attrPosition = new ArrayList <int> ();}
+colomn_declare returns[List <Integer> attrPosition] //return manual input position of values
+	@init {attrPosition = new ArrayList <Integer> ();}
 	:	LPARSE colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));}
 	 (COMMA colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));} )* RPARSE
 	;
