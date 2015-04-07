@@ -51,16 +51,11 @@ import dbms.*;
 	
 }
 start 
-	locals[
-			Query query = new Query();
-			query = null;
-		]
 	:	(instructions 
 		{
-			query = $instructions.query;
-			execute(query);
+			execute($instructions.query);
 		}
-		';')* EOF
+		SCOL)* EOF
 	;
 
 instructions returns[Query query]
@@ -168,9 +163,9 @@ insert_into returns [Query query]
 			ArrayList <String> valueList = new ArrayList <String>();
 		}
 		table_name {tableName = $table_name.value;}
-		VALUES LPARSE consts {valueList.add(consts.value);} 
-		(COMMA consts {valueList.add(consts.value); } )* RPARSE
-		{query = new Insert(tableName, valueList); }
+		VALUES LPARSE consts {valueList.add($consts.value);} 
+		(COMMA consts {valueList.add($consts.value); } )* RPARSE
+		{$query = new Insert(tableName, valueList); }
 		
 		|  
 
@@ -184,19 +179,18 @@ insert_into returns [Query query]
 		{	
 			tempPosition = $colomn_declare.attrPosition.remove(i++);
 			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,consts.value); 
+				valueList.add(tempPosition,$consts.value); 
 				//add at specific index, after that index(include)
 				// would shift
-			else valueList.add(consts.value);//just add at end
+			else valueList.add($consts.value);//just add at end
 		}
-		(COMMA consts {valueList.add(consts.value); } )* RPARSE
-		{query = new Insert(tableName, valueList); }
+		(COMMA consts {valueList.add($consts.value); } )* RPARSE
+		{$query = new Insert(tableName, valueList); }
 	;
 
 colomn_declare returns[List <Integer> attrPosition] //return manual input position of values
-	@init {attrPosition = new ArrayList <Integer> ();}
-	:	LPARSE colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));}
-	 (COMMA colomn_name {attrPosition.add(attrPosTable.get($colomn_name.value));} )* RPARSE
+	:	LPARSE colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value));}
+	 (COMMA colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value));} )* RPARSE
 	;
 
 select_from
