@@ -4,3 +4,13 @@
 /SqlLexer.tokens
 /SqlListener.java
 /SqlParser.java
+/DynScope.tokens
+/DynScopeBaseListener.java
+/DynScopeLexer.java
+/DynScopeLexer.tokens
+/DynScopeListener.java
+/DynScopeParser.java
+/T.tokens
+/TBaseListener.java
+/TListener.java
+/TParser.java

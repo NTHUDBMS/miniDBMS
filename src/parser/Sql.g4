@@ -105,7 +105,7 @@ attribute
 		String _attrName = $colomn_name.value;
 		Attribute _attribute = new Attribute($types.type, _attrName);
 		//not check condition
-		if (! $create_table::attrList.contains(_attribute)) {
+		if (! create_table::attrList.contains(_attribute)) {
 			create_table::attrPosTable.put(_attrName, Integer.valueOf(create_table::attrList.size()));
 			create_table::attrList.add(_attribute);
 		}
