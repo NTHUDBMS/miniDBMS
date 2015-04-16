@@ -113,11 +113,13 @@ attribute
 
 
 primary_key 
-	
+	locals[
+		Attribute _attribute
+	]
 	:	colomn_name types PRIMARY KEY{
-		Attribute _attribute = new Attribute($types.type, $colomn_name.value);
-		if (! $attribute_list::attrList.contains(_attribute)) {
-			$attribute_list::attrList.add(_attribute);
+		$_attribute = new Attribute($types.type, $colomn_name.value);
+		if (! $attribute_list::attrList.contains($_attribute)) {
+			$attribute_list::attrList.add($_attribute);
 			//save position of attribute name 
 			$attribute_list::attrPosTable.put($colomn_name.value, Integer.valueOf($attribute_list::attrList.size()));
 		}
@@ -132,23 +134,17 @@ primary_key
 	;
 
 types	returns[Attribute.Type type]
-	/*@init{Attribute.Type type;
-		  Attribute attribute; //not local
-		 }*/
+	
 	:	(INT     {$type = Attribute.Type.INT;}  
 		|VARCHAR {$type = Attribute.Type.CHAR;}
 
-		) length? {$attribute::_attribute.setLength($length.lengthToken);}
+		) length? {$primary_key::_attribute.setLength($length.lengthToken);}
 		;
 	
 length returns [int lengthToken]
-	:	LPARSE int_len { $lengthToken = $int_len.value;} RPARSE
+	:	LPARSE INT_IDENTI { $lengthToken = $INT_IDENTI.int;} RPARSE
 	;
 
-int_len returns [int value]
-	:	x=type_int {$value = $x.value;}
-	;
-	
 
 insert_into returns [Query query]
 	@init {int i = 0;
@@ -332,6 +328,8 @@ VALUES  : V A L U E S      { DBMS.dump("VALUES");};
 WHERE   : W H E R E        { DBMS.dump("WHERE");};
 AND 	: A N D            { DBMS.dump("AND");};
 OR  	: O R              { DBMS.dump("OR");};
+
+//INT :   [0-9]+ ;         // match integers
 
 IDENTIFIER
 	: [a-zA-Z_][a-zA-Z_0-9]*;
