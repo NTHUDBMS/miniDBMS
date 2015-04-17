@@ -54,11 +54,15 @@ public class DBExecutor{
 	 * @throws IOException
 	 * @throws Error
 	 * @throws ClassNotFoundException
+	 * check if table is already exit in hash table
+	 * if not put tableName in hash
+	 * and write hash tables in file
 	 */
 	private void create(Create query)
 		throws IOException, Error, ClassNotFoundException 
 	{
 		Hashtable<String, Table> tables = null;
+		//tablefile saves tables
 		File tableFile = new File(databaseDefUrl);
 		
 		//
@@ -73,8 +77,9 @@ public class DBExecutor{
 			throw new Error("CREATE: Table: table" + query.getTableName()+ "is already exist");
 		}
 
-		//create table now
+		//store table in hash table
 		tables.put(query.getTableName(), query.getTable());
+		//write tables in tablefiles
 		this.writeTableDef(tableFile, tables);
 		
 		//dump message
@@ -89,6 +94,11 @@ public class DBExecutor{
 	 * @throws IOException
 	 * @throws Error
 	 * @throws ClassNotFoundException
+	 * 
+	 * get tuple list from file
+	 * convert new tuple in string to new tuple in types
+	 * check primary whether is repeated
+	 * if not store new added tuple list to typle file
 	 */
 	public void insert (Insert query)
 			throws IOException, Error, ClassNotFoundException
@@ -97,6 +107,9 @@ public class DBExecutor{
 		ArrayList <Value> valueList = null;
 		ArrayList <ArrayList <Value>> tupleList;
 		Table table;
+		/**
+		 * get table from tableFile
+		 */
 		
 		File tableFile = new File(databaseDefUrl);
 		if (tableFile.exists()) {
@@ -143,8 +156,11 @@ public class DBExecutor{
 	/**
 	 * 
 	 * @param primaryList
+	 * store primary attribute position in table
 	 * @param tupleList
+	 * old tuple list
 	 * @param newValueList
+	 * new tuple list to check if primary repeated in old
 	 * @return
 	 */
 	private boolean checkPrimarys(ArrayList <Integer> primaryList, ArrayList <ArrayList <Value>> tupleList, ArrayList <Value> newValueList)
@@ -166,7 +182,15 @@ public class DBExecutor{
 		return true;
 
 	}
-
+	
+	/**
+	 * @param tableDef table from the table file
+	 * @param values valueList from the query
+	 * 
+	 * check insert value list's columns numbers whether the same with tables
+	 * convert strings in values to different types of object in valueList
+	 * based on  attribute list 
+	 */
 
 
 	private ArrayList <Value> convertInsertValueType(Table tableDef, ArrayList <String> values) throws Error
@@ -193,6 +217,9 @@ public class DBExecutor{
 		  			Value value = new Value(intValue);
 		  			valueList.add(value);
 		  		}
+		  		/**
+		  		 * need to check if varchar type string length exceed the create scheme defined
+		  		 */
 		  		else if(type == Attribute.Type.CHAR){
 		  			//check type and length  //' ' +length of string
 		  			if (attribute.getLength() +2 < strValue.length()|| strValue.charAt(0)!= '\'') {
@@ -212,8 +239,10 @@ public class DBExecutor{
 
 	}
 
-
-	//used for creation
+	/*used for creation
+	 * read in table from file
+	 */
+	
 
 	@SuppressWarnings("unchecked")
 	private Hashtable <String, Table> getTableDef()throws IOException, ClassNotFoundException{
@@ -227,7 +256,10 @@ public class DBExecutor{
 
 		return tables;
 	}
-
+	/*
+	 * write table into file
+	 */
+	
 	private void writeTableDef(File tableFile, Hashtable<String, Table>tables)throws IOException
 	{
 		FileOutputStream outFile = new FileOutputStream(tableFile);
@@ -237,8 +269,11 @@ public class DBExecutor{
 		outFile.close();
 	}
 
-
-	//used for insertion
+	/*
+	 * get tuple from tuplefile(tupples)
+	 * used for insertion 
+	 */
+	
 
 	@SuppressWarnings("unchecked")
 	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)throws IOException, ClassNotFoundException{
