@@ -114,7 +114,7 @@ attribute
 
 primary_key 
 	locals[
-		Attribute _attribute
+		Attribute _attribute;
 	]
 	:	colomn_name types PRIMARY KEY{
 		$_attribute = new Attribute($types.type, $colomn_name.value);
@@ -125,7 +125,7 @@ primary_key
 		}
 		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		
-		if (!$attribute_list::primaryList.contains($colomn_name.value) {
+		if (!$attribute_list::primaryList.contains($colomn_name.value)) {
 			//save position of attribute in primary list
 			$attribute_list::primaryList.add($attribute_list::attrPosTable.get($colomn_name.value));
 		}
@@ -134,11 +134,10 @@ primary_key
 	;
 
 types	returns[Attribute.Type type]
-	
 	:	(INT     {$type = Attribute.Type.INT;}  
 		|VARCHAR {$type = Attribute.Type.CHAR;}
 
-		) length? {$primary_key::_attribute.setLength($length.lengthToken);}
+		) length? 	{$primary_key::_attribute.setLength($length.lengthToken);}
 		;
 	
 length returns [int lengthToken]
@@ -177,7 +176,7 @@ insert_into returns [Query query]
 		{	
 			tempPosition = $colomn_declare.attrPosition.remove(i++);
 			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,((String)$consts.value); 
+				valueList.add(tempPosition,(String)$consts.value); 
 				//add at specific index, after that index(include)
 				// would shift
 			else valueList.add((String)$consts.value);//just add at end
@@ -185,7 +184,7 @@ insert_into returns [Query query]
 		(COMMA consts {
 			valueList.add((String)$consts.value); 
 			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,((String)$consts.value); 
+				valueList.add(tempPosition,(String)$consts.value); 
 			else valueList.add((String)$consts.value);
 
 		} )* RPARSE
