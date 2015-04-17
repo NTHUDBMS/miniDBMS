@@ -26,9 +26,9 @@ import dbms.*;
 		executor = new DBExecutor();
 		while(true)
 		{
-
-		    	try{
+				try{
 		    		if (query != null) {
+		    			System.out.println("Query is not null");
 		    			executor.execute(query);
 		    		}
 		    	}
@@ -52,9 +52,7 @@ import dbms.*;
 }
 start 
 	:	(instructions 
-		{
-			execute($instructions.query);
-		}
+		{execute($instructions.query);}
 		SCOL)* EOF
 	;
 
@@ -65,11 +63,11 @@ instructions returns[Query query]
 	|	insert_into	{$query = $insert_into.query;}
 	;
 
-create_table returns [Query query]
+create_table returns[Query query] 
  	locals [
  	String tableName,
 	String attrName,
-	Attribute _attribute,
+	//Attribute _attribute,
 	//Attribute.Type type,
 	int lengthToken
 	//ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
@@ -78,34 +76,38 @@ create_table returns [Query query]
 	]
 	
 	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
-		LPARSE attribute_list RPARSE
-		{$query = new Create($tableName, $attribute_list::attrList, $attribute_list::primaryList, $attribute_list::attrPosTable);}
+		LPARSE attribute_list RPARSE 
+		{	System.out.println("Start to create table");
+			$query = new Create($tableName, $attribute_list::attrList, $attribute_list::primaryList, $attribute_list::attrPosTable);}
 	;
 
 
 attribute_list 
 	locals[
-			ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
+			Attribute _attribute,
+			ArrayList <Attribute> attrList,
 			Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(),
 			ArrayList <Integer> primaryList = new ArrayList <Integer> ()
 	]
 	:	(attribute COMMA )* primary_key (COMMA attribute )*
 	|	attribute (COMMA attribute )*
+	
 	;
 
 
 attribute 
 	
-	locals[
-			Attribute _attribute
-	]
+	@init{Attribute _attribute = $attribute_list::_attribute;}
 	:	colomn_name types {
 		String _attrName = $colomn_name.value;
-		$_attribute = new Attribute($types.type, _attrName);
+		_attribute = new Attribute($types.type, _attrName);
 		//not check condition
-		if (! $attribute_list::attrList.contains($_attribute)) {
-			$attribute_list::attrPosTable.put(_attrName, Integer.valueOf($attribute_list::attrList.size()));
-			$attribute_list::attrList.add($_attribute);
+		if ($attribute_list::attrList!= null) {	
+			if ( ! $attribute_list::attrList.contains(_attribute)) {
+				$attribute_list::attrPosTable.put(_attrName, Integer.valueOf($attribute_list::attrList.size()));
+				$attribute_list::attrList.add(_attribute);
+				System.out.println("colomn name is" + _attrName);
+			}	
 		}
 		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 	}
@@ -113,13 +115,12 @@ attribute
 
 
 primary_key 
-	locals[
-		Attribute _attribute
-	]
+	@init{Attribute _attribute = $attribute_list::_attribute;}		
 	:	colomn_name types PRIMARY KEY{
-		$_attribute = new Attribute($types.type, $colomn_name.value);
-		if (! $attribute_list::attrList.contains($_attribute)) {
-			$attribute_list::attrList.add($_attribute);
+		_attribute = new Attribute($types.type, $colomn_name.value);
+		System.out.println("Primary key colomn_name is "+ $colomn_name.value);
+		if (! $attribute_list::attrList.contains(_attribute)) {
+			$attribute_list::attrList.add(_attribute);
 			//save position of attribute name 
 			$attribute_list::attrPosTable.put($colomn_name.value, Integer.valueOf($attribute_list::attrList.size()));
 		}
@@ -134,13 +135,13 @@ primary_key
 	;
 
 types	returns[Attribute.Type type]
-	:	(INT     {$type = Attribute.Type.INT;}  
+	@init{Attribute _attribute = $attribute_list::_attribute;}
+	:	INT     {$type = Attribute.Type.INT;}  
 		|VARCHAR {$type = Attribute.Type.CHAR;}
-
-		) length  //must have varchar(length) here
+	length  //must have varchar(length) here
 		{
 				if($length.lengthToken >0)
-					$primary_key::_attribute.setLength($length.lengthToken);
+					_attribute.setLength($length.lengthToken);
 		}
 		;
 	
