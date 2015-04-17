@@ -70,7 +70,7 @@ create_table returns [Query query]
  	String tableName,
 	String attrName,
 	Attribute _attribute,
-	Attribute.Type type,
+	//Attribute.Type type,
 	int lengthToken
 	//ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
 	//ArrayList <Integer> primaryList = new ArrayList <Integer> (),
@@ -114,7 +114,7 @@ attribute
 
 primary_key 
 	locals[
-		Attribute _attribute;
+		Attribute _attribute
 	]
 	:	colomn_name types PRIMARY KEY{
 		$_attribute = new Attribute($types.type, $colomn_name.value);
@@ -137,7 +137,11 @@ types	returns[Attribute.Type type]
 	:	(INT     {$type = Attribute.Type.INT;}  
 		|VARCHAR {$type = Attribute.Type.CHAR;}
 
-		) length? 	{$primary_key::_attribute.setLength($length.lengthToken);}
+		) length  //must have varchar(length) here
+		{
+				if($length.lengthToken >0)
+					$primary_key::_attribute.setLength($length.lengthToken);
+		}
 		;
 	
 length returns [int lengthToken]
@@ -328,7 +332,6 @@ WHERE   : W H E R E        { DBMS.dump("WHERE");};
 AND 	: A N D            { DBMS.dump("AND");};
 OR  	: O R              { DBMS.dump("OR");};
 
-//INT :   [0-9]+ ;         // match integers
 
 IDENTIFIER
 	: [a-zA-Z_][a-zA-Z_0-9]*;
