@@ -14,6 +14,10 @@ public class Table implements Serializable {
 	private ArrayList<Attribute> attrList;
 	private ArrayList<Integer> primaryList;
 	private Hashtable<String, ForeignReference> referenceTable;
+	private ArrayList<String> subSchemaList = null;
+	private Hashtable<String, Integer> attrPosTable;
+
+	
 	
 	public Table(String tableName, ArrayList<Attribute> attrList, ArrayList<Integer> primaryList) {
 		this.tablename = tableName;
@@ -51,6 +55,27 @@ public class Table implements Serializable {
 	}
 	public void setReferenceTable(Hashtable<String, ForeignReference> referenceTable) {
 		this.referenceTable = referenceTable;
+	}
+	
+
+	public int getAttrPos(String valueName){
+		if(this.attrPosTable.containsKey(valueName)){
+			return this.attrPosTable.get(valueName).intValue();
+		}else{
+			return -1;
+		}	
+	}
+
+	public Hashtable<String, Integer> getAttrPosHashtable(){
+		return this.attrPosTable;
+	}
+
+	public void setSubschema(ArrayList<String> subSchemaList){
+		this.subSchemaList = subSchemaList;
+	}
+
+	public ArrayList<String> getSubschemaList(){
+		return this.subSchemaList;
 	}
 	
 }

@@ -1,10 +1,30 @@
 package dbms;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.LinkedList;
 
-import manageDatabase.*;
-import structure.*;
+import manageDatabase.BinaryExp;
+import manageDatabase.Condition;
+import manageDatabase.Create;
+import manageDatabase.DoubleExp;
+import manageDatabase.Exp;
+import manageDatabase.IdExp;
+import manageDatabase.Insert;
+import manageDatabase.IntExp;
+import manageDatabase.Query;
+import manageDatabase.Select;
+import manageDatabase.StrExp;
+import manageDatabase.TuplesWithNameTable;
+import structure.Attribute;
+import structure.Table;
+import structure.Value;
 
 /**
  * This class performs the major part of DBMS.<br>
@@ -43,6 +63,9 @@ public class DBExecutor{
 			}
 			else if (query instanceof Insert){ 
 				insert((Insert)query);
+			}
+			else if(query instanceof Select){
+				select((Select) query);
 			}
 		}catch(IOException ex){
 			System.err.println(ex.getMessage());
@@ -162,6 +185,323 @@ public class DBExecutor{
 	}
 	
 	
+
+	public void select(Select query) throws IOException, Error, ClassNotFoundException{
+		Hashtable<String, Table> tables = null;
+		boolean isNormalUser = query.isNormalUser();
+		File tableFile = new File(databaseDefUrl);
+		//Check if database defined
+		if(tableFile.exists()){
+			tables = this.getTableDef();
+		}else{
+			throw new Error("SELECT: No Database Defined");
+		}
+
+		ArrayList<String> tableNames = query.getTableNames();
+		ArrayList<String> attrStrList = query.getAttrStrList();
+		Condition selectCond = query.getCondition();
+		//Hash table and arraylist to save table
+		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
+		ArrayList<Table> tableArrayList = new ArrayList<Table>();
+		//Hash table to save tuples for each table
+		Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashTable = new Hashtable<String, ArrayList<ArrayList<Value>> >();
+
+		//Check if the table defined
+		for(String tableName : tableNames){
+			if(!tables.containsKey(tableName)){
+				throw new Error("SELECT: No table " + tableName + " Found");
+			}else{
+				tableList.put(tableName, tables.get(tableName));
+				tableArrayList.add(tables.get(tableName));
+			}
+
+			File tupleFile = new File(tableName + ".db");
+			if(!tupleFile.exists()){
+				throw new Error("SELECT: No tuple in the table " + tableName); 
+			}else{
+				ArrayList< ArrayList<Value> > tupleList = this.getTupleList(tupleFile);
+				tupleHashTable.put(tableName, tupleList);
+			}
+			
+		}
+
+		//Get conditional attributes if not null
+		ArrayList<String> conditionAttributeList = null;
+		if(selectCond != null){
+			conditionAttributeList = selectCond.getIdList();
+		}
+
+		//Get all attributes without duplicates
+		ArrayList<String> allAttributeList = null;
+		if(!query.isSelectAll()){
+			allAttributeList = new ArrayList<String>(attrStrList);
+
+		}else{
+			//If select all attributes
+			allAttributeList = new ArrayList<String>();
+			
+			//Check if needs to check subschema
+			if(!isNormalUser){
+				for(String tableName : tableList.keySet()){
+					Table table = tableList.get(tableName);
+					for(Attribute attr : table.getAttrList()){
+						allAttributeList.add(attr.getName());
+						
+					}
+				}
+
+			}else{
+				//Put all attributes in the subschema
+				for(String tableName : tableList.keySet()){
+					Table table = tableList.get(tableName);
+					ArrayList<String> subSchemaList = table.getSubschemaList();
+					for(Attribute attr : table.getAttrList()){
+						if(subSchemaList != null){
+							if(subSchemaList.contains(attr.getName()) != false){
+								allAttributeList.add(attr.getName());
+							}
+						}else{
+							allAttributeList.add(attr.getName());
+						}
+					}
+	
+				}
+
+
+			}
+
+		}
+			//Add condition attributes into all attributes if not added yet
+			if(conditionAttributeList != null){
+				for(String condStrAttr : conditionAttributeList){
+					if(!allAttributeList.contains(condStrAttr)){
+						allAttributeList.add(condStrAttr);
+					}
+				}
+			}
+
+		//Check if a selected attribute or conditional attribute in the table
+		for(String attrName : allAttributeList){
+			boolean containsAttr = false;
+			for(String tableName : tableList.keySet()){
+				Table table = tableList.get(tableName);
+				ArrayList<String> subSchemaList = table.getSubschemaList();
+
+				if(table.getAttrPos(attrName) != -1){
+					containsAttr = true;
+
+					//Check subschema for normal user
+					if(isNormalUser && subSchemaList != null){
+						if(subSchemaList.contains(attrName) == false){
+							containsAttr = false;
+						}
+					}
+				}
+			}
+			if(containsAttr == false){
+				throw new Error("SELECT: Attribute " + attrName + " does not exists");
+			}
+		}
+
+		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
+		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttributeList, query.isSelectAll(), isNormalUser);
+
+		//Evaluate condition
+		if(selectCond != null){
+			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
+		}
+		
+		//Obtain selected values tuples
+		TuplesWithNameTable selectedValuesTable = null;
+
+		if(!query.isSelectAll()){
+			selectedValuesTable = this.getTuplesBySelectedValue(attrStrList, combinedTable);	
+		}else{
+			selectedValuesTable = combinedTable;
+		}
+		printTable(selectedValuesTable);
+	}
+
+
+	private void printTable(TuplesWithNameTable tuplesTable){
+		System.out.println();
+		ArrayList<ArrayList<Value>> tupleList = tuplesTable.getTupleList();
+		Hashtable<String, Integer> nameTable = tuplesTable.getNameTable();
+		if(tupleList.size()== 0){
+			throw new Error("No tuple selected");
+		}
+		String[] orderedAttrNames = new String[nameTable.size()];
+
+		//Get ordered attribute names
+		for(String attrName : nameTable.keySet()){
+			orderedAttrNames[nameTable.get(attrName).intValue()] = attrName;
+		}
+
+		//Print attribute names
+		for(int i = 0; i < orderedAttrNames.length; i++){
+			System.out.printf("%-20s", orderedAttrNames[i]);
+		}
+
+		System.out.println();
+
+		for(ArrayList<Value> tuple : tupleList){
+			for(Value value : tuple){
+				System.out.printf("%-20s", value.toString());
+			}
+			System.out.println();
+		}
+
+		System.out.println(tupleList.size() + " tuples selected");
+	}
+
+	
+	private TuplesWithNameTable getTuplesBySelectedValue(ArrayList<String> selectedList, TuplesWithNameTable tuples){
+		Hashtable<String, Integer> nameTable = tuples.getNameTable();
+		Hashtable<String, Integer> newNameTable = new Hashtable<String, Integer>();
+
+		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
+		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value> >();
+
+		int nameCount = 0;		
+		for(String selectedValue : selectedList){
+			newNameTable.put(selectedValue, nameCount);
+			nameCount++;
+		}
+
+		for(ArrayList<Value> tuple : tupleList){
+			ArrayList<Value> newTuple = new ArrayList<Value>();
+			for(String selectedValue : selectedList){
+				newTuple.add(tuple.get( nameTable.get(selectedValue).intValue() ) );
+			}
+			newTupleList.add(newTuple);
+		}
+
+		return new TuplesWithNameTable(newNameTable, newTupleList);
+
+	}
+	private TuplesWithNameTable getTuplesBySelectedCond(Condition cond, TuplesWithNameTable tuples){
+		Hashtable<String, Integer> nameTable = tuples.getNameTable();
+
+		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
+		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value> >();
+		
+		Exp exp = cond.getExp();
+		Object retBool;
+
+		for(ArrayList<Value> tuple : tupleList){
+			retBool = exp.accept(this, nameTable, tuple);
+			if(retBool instanceof Boolean){
+				if( ((Boolean) retBool).booleanValue() == true){
+					newTupleList.add(tuple);
+				}
+			}else{
+				throw new Error("SELECT: Tuple select condition evaluation failed");
+			}
+
+		}
+		return new TuplesWithNameTable(nameTable, newTupleList);
+	}
+	private TuplesWithNameTable combineTables(ArrayList<Table> tables, Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashtable, ArrayList<String> allAttributes, boolean selectAll, boolean isNormalUser){
+
+		//ArrayList<ArrayList<Value>> combinedTupleList = new ArrayList<ArrayList<Value>>();
+		//Hashtable<String, Integer> combinedAttrNameList = new Hashtable<String, Integer>();		
+ 
+		LinkedList<TuplesWithNameTable> allTables = new LinkedList<TuplesWithNameTable>();
+
+		for(Table table : tables){
+			ArrayList< ArrayList<Value> > tupleList = tupleHashtable.get(table.getTableName());
+
+			//Get a table that contains all values needed
+			TuplesWithNameTable neededValueTable = null;
+			if(!selectAll){
+				neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
+			}else{
+				//Check if it is normal user and select only subschema values
+				if(!isNormalUser){
+					neededValueTable = new TuplesWithNameTable(table.getAttrPosHashtable(), tupleList);
+				}else{
+					neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
+				}
+			}
+			allTables.add(neededValueTable);
+		}
+
+
+		return cartesianProduct(allTables);
+	}
+
+	private TuplesWithNameTable cartesianProduct(LinkedList<TuplesWithNameTable> allTables){
+		//LinkedList<TuplesWithNameTable> cloneAllTables = new LinkedList<TuplesWithNameTable>(allTables);
+
+		while(allTables.size() >= 2){
+			TuplesWithNameTable combinedTable = _cartesianProduct(allTables.get(0), allTables.get(1));
+			allTables.removeFirst();
+			allTables.removeFirst();
+			allTables.addFirst(combinedTable);
+		}
+		
+		return allTables.get(0);
+	}
+
+	private TuplesWithNameTable _cartesianProduct(TuplesWithNameTable table1, TuplesWithNameTable table2){
+			Hashtable<String, Integer> nameTable;
+			ArrayList< ArrayList<Value> > tupleList;
+
+			nameTable = new Hashtable<String, Integer>(table1.getNameTable());
+			tupleList = new ArrayList<ArrayList<Value>>();
+
+			int table1Size = nameTable.size();
+			Hashtable<String, Integer> table2NameTable = table2.getNameTable();
+
+			//Update name table position
+			for(String key : table2NameTable.keySet()){
+				nameTable.put(key, table2NameTable.get(key) + table1Size);
+			}
+
+			//Product table1 with table2
+			for(ArrayList<Value> tuple1 : table1.getTupleList()){
+				
+				for(ArrayList<Value> tuple2 : table2.getTupleList()){
+					ArrayList<Value> combinedTuple = new ArrayList<Value>(tuple1);
+					combinedTuple.addAll(tuple2);
+					tupleList.add(combinedTuple);
+				}
+			}
+
+			return new TuplesWithNameTable(nameTable, tupleList);
+
+	}
+
+
+	private TuplesWithNameTable getNeededValuesTuples(Table table, ArrayList< ArrayList<Value> > tuples, ArrayList<String> allAttributes){
+
+			ArrayList<ArrayList<Value>> newTupleList = new ArrayList<ArrayList<Value>>();
+			Hashtable<String, Integer> newAttrNamePos = new Hashtable<String, Integer>();	
+			ArrayList<Integer> neededAttrPos = new ArrayList<Integer>();
+
+			//Save all attributes positions needed
+			for(String attrName : allAttributes){
+				int attrPos;
+				if( (attrPos = table.getAttrPos(attrName)) != -1){
+					newAttrNamePos.put(attrName, neededAttrPos.size());
+					neededAttrPos.add(attrPos);
+				}
+			}
+
+
+			//Save all needed values in each tuple
+			for(ArrayList<Value> tuple : tuples){
+				ArrayList<Value> newTuple = new ArrayList<Value>();
+				for(Integer valuePos : neededAttrPos){
+					newTuple.add(tuple.get(valuePos));
+				}
+				newTupleList.add(newTuple);
+			}
+
+			return new TuplesWithNameTable(newAttrNamePos, newTupleList);
+	}
+
+	
 	//cannot be null is not yet implemented
 	//primary key cannot be null or repeated!!!!
 	/**
@@ -256,6 +596,7 @@ public class DBExecutor{
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
+	@SuppressWarnings("unchecked")
 	private Hashtable <String, Table> getTableDef()
 			throws IOException, ClassNotFoundException
 	{
@@ -310,7 +651,196 @@ public class DBExecutor{
 		out.close();
 		outFile.close();
 	}
-
-
+	
+	
+	
+	@SuppressWarnings("unused")
+	public Object visit(BinaryExp exp, Value value, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+		//System.err.println("Enter into BinaryExp ");//
+		String op = exp.getOp();
+		Object ret = null;
+		
+		
+		//this is unused!!
+		if(exp == null){
+			return Boolean.valueOf(true);
+		}
+	
+		Exp left = exp.getLeft();
+		Exp right = exp.getRight();
+	
+		Object leftOp = null;
+		Object rightOp = null;
+	
+		if(left != null){
+			//System.err.println("Left not null " + op);//
+			if(tuple == null){
+				leftOp = left.accept(this, value);
+			}else{
+				leftOp = left.accept(this, attrPosTable, tuple);
+			}
+			//System.err.println("Left visited ");//
+		}
+	
+		if(right != null){
+			//System.err.println("Right not null " + op);//
+			if(tuple == null){
+				rightOp = right.accept(this, value);
+			}else{
+				rightOp = right.accept(this, attrPosTable, tuple);
+			}
+		}
+	
+		if( ( (leftOp instanceof Integer) || (leftOp instanceof Double) ) && ( (rightOp instanceof Integer) || (rightOp instanceof Double) )){
+			
+			 double l, r;
+			if(leftOp instanceof Integer){
+				l = (double)((Integer) leftOp).intValue();
+			}else{
+				 l = ((Double) leftOp).doubleValue();
+			}
+			
+			if(rightOp instanceof Integer){
+				r = (double)((Integer) rightOp).intValue();
+			}else{
+				 r = ((Double) rightOp).doubleValue();
+			}
+	
+			 if (op.equals("<")) {
+	            		ret = (l < r);
+	       		 } else if (op.equals("<=")) {
+	            		ret = (l <= r);
+	        		} else if (op.equals("=")) {
+	           			ret = (l == r);
+	        		} else if (op.equals("!=")) {
+	            		ret = (l != r);
+	        		} else if (op.equals(">")) {
+	            		ret = (l > r);
+	        		} else if (op.equals(">=")) {
+	            		ret = (l >= r);
+	        		} else if (op.equals("+")) {
+	            		ret = (l + r);
+	        		} else if (op.equals("-")) {
+	            		ret = (l - r);
+	        		} else if (op.equals("*")) {
+	            		ret = (l * r);
+	        		} else if (op.equals("/")) {
+	            		ret = (l / r);
+	        		}else{
+	            		throw new Error("Implement BinaryExp for " + op);
+			}
+	
+	    		return ret;
+		}
+	
+		if((leftOp instanceof String) && (rightOp instanceof String)){
+			if(op.equals("=")){
+				if( ( (String)leftOp).equals((String) rightOp)){
+					return Boolean.valueOf(true);
+				}else{
+					return Boolean.valueOf(false);
+				}
+			}else if (op.equals("!=")){
+				if( ((String)leftOp).equals((String) rightOp)){
+					return Boolean.valueOf(false);
+				}else{
+					return Boolean.valueOf(true);
+				}
+			}else{
+				throw new Error("Condition error: String can only compare with \"=\" or \"!=\" operator"); 
+			}
+		}
+	
+		if( (leftOp instanceof Boolean) && (rightOp instanceof Boolean)){
+			Boolean boolRet = false;
+			if(op.toUpperCase().equals("AND")){
+				boolRet = ((Boolean)leftOp).booleanValue() && ((Boolean)rightOp).booleanValue();
+			}
+	
+			if(op.toUpperCase().equals("OR")){
+				boolRet = ((Boolean)leftOp).booleanValue() || ((Boolean)rightOp).booleanValue();
+			}
+			return boolRet;
+		}
+	
+		return leftOp;
+		
+	}
+	
+	public Object visit(IntExp exp, Value value){
+		//System.err.println("Enter into intExp ");
+		return Integer.valueOf(exp.getInt());
+	}
+		
+	public Object visit(StrExp exp, Value value){
+		//System.err.println("Enter into StrExp ");
+		return exp.getString();
+	}
+	
+	
+	public Object visit(IdExp exp, Value value){
+		//System.err.println("Enter into idExp");
+		if(value.getType() == Attribute.Type.INT){
+			return Integer.valueOf(value.getInt());
+		}
+		else if(value.getType() == Attribute.Type.CHAR){
+			return value.getChar();
+		}else{
+			throw new Error("IdExp error");
+		}
+	}
+	
+	public Object visit(IdExp exp, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+		String attrName = exp.getId();		
+		Value value = tuple.get(attrPosTable.get(attrName).intValue());
+	
+		return visit(exp, value);
+	}
+	
+	public Object visit(Exp exp,  Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+	
+		if(exp instanceof BinaryExp){
+			//System.err.println("Enter into visit binary");
+			return ((BinaryExp) exp).accept(this, null, attrPosTable, tuple);
+		}else if(exp instanceof StrExp){
+			//System.err.println("Enter into visit str");
+			return ((StrExp) exp).accept(this, null);
+		}else if(exp instanceof IdExp){
+			return ((IdExp) exp).accept(this, attrPosTable, tuple);
+		}else if(exp instanceof DoubleExp){
+			return ((DoubleExp) exp).accept(this, null);
+		}else if(exp instanceof IntExp){
+			//System.err.println("Enter into visit int");
+			return ((IntExp) exp).accept(this, null);
+		}else{
+			return Boolean.valueOf(true);
+		}
+	
+	}
+	
+	public Object visit(Exp exp, Value value){
+		
+		if(exp instanceof BinaryExp){
+			//System.err.println("Enter into visit binary");
+			return ((BinaryExp) exp).accept(this, value, null, null);
+		}else if(exp instanceof StrExp){
+			//System.err.println("Enter into visit str");
+			return ((StrExp) exp).accept(this, value);
+		}else if(exp instanceof IdExp){
+			return ((IdExp) exp).accept(this, value);
+		}else if(exp instanceof DoubleExp){
+			return ((DoubleExp) exp).accept(this, value);
+		}else if(exp instanceof IntExp){
+			//System.err.println("Enter into visit int");
+			return ((IntExp) exp).accept(this, value);
+		}else{
+			return Boolean.valueOf(true);
+		}
+	}
+	
 }//end DBExecutor
+
+
+
+
 
