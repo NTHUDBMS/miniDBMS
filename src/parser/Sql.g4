@@ -72,7 +72,7 @@ create_table returns[Query query]
 	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
 		LPARSE attribute_list RPARSE 
 		{
-			DBMS.outConsole("query: create_table start");
+			//DBMS.outConsole("query: create_table start");
 			$query = new Create(
 					$tableName, 
 					$attribute_list.r_attrList, 
@@ -112,7 +112,11 @@ attribute
 	}
 	:	colomn_name types {
 			String _attrName = $colomn_name.value;
-			_attribute = new Attribute($types.type, _attrName);
+			_attribute = new Attribute(
+				$types.type,
+				_attrName,
+				$types.lengthToken
+			);
 			
 			// check attribute list not empty
 			if ($attribute_list::attrList== null) {	
@@ -126,7 +130,7 @@ attribute
 					Integer.valueOf($attribute_list::attrList.size())
 				);
 				$attribute_list::attrList.add(_attribute);
-				DBMS.outConsole("fetch colomn name: " + _attrName);
+				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
 			}else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		}
 	;
@@ -152,16 +156,20 @@ primary_key
 	}
 	;
 
-types	returns[Attribute.Type type]
-	@init{Attribute _attribute = $attribute_list::_attribute;}
-	:	INT     {$type = Attribute.Type.INT;}  
-		|VARCHAR {$type = Attribute.Type.CHAR;}
-	length  //must have varchar(length) here
-		{
-				if($length.lengthToken >0)
-					_attribute.setLength($length.lengthToken);
+types returns[
+		Attribute.Type type,
+		int lengthToken
+	]
+	:	INT {
+			$type = Attribute.Type.INT;
+			$lengthToken = 0;
+		}  
+	|	VARCHAR length {
+			$type = Attribute.Type.CHAR;
+			if($length.lengthToken >0)
+				$lengthToken = $length.lengthToken;
 		}
-		;
+	;
 	
 length returns [int lengthToken]
 	:	LPARSE INT_IDENTI { $lengthToken = $INT_IDENTI.int;} RPARSE
