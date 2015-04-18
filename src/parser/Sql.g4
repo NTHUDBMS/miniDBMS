@@ -212,43 +212,56 @@ insert_into returns [Query query]
 	@init {int i = 0;
 		   int tempPosition;
 		   } //iterator for List <int> attrPosition 
-	:/*
+	:
+	 /*
 	 *insert tuples columns need to be in order 
 	 */
 		INSERT INTO 
 		{
 			String tableName;
+			/**
+			input all element in string no need to convert type
+			will convert type in DBExecutor
+			*	
+			*/
 			ArrayList <String> valueList = new ArrayList <String>();
 		}
 		table_name {tableName = $table_name.value;}
-		VALUES LPARSE consts {valueList.add((String)$consts.value);} 
-		(COMMA consts {valueList.add((String)$consts.value); } )* RPARSE
+		VALUES LPARSE consts {valueList.add($consts.value);} 
+		(COMMA consts {valueList.add($consts.value); } )* RPARSE
 		{$query = new Insert(tableName, valueList); }
 		
-		|  
-		/*
-		 * Insert into specific column, use List<Integer> attrPostion to track column index
-		 */
+		|
+
 		INSERT INTO 
+
 		{
+		/**
+		Insert into specific column, use List<Integer> attrPostion to track column index
+		these has to change to colomn type storing 
+		we don't know colomn position in the parsing phase
+		all we can do is to add element in each colomn list
+
+		*/
 			String tableName;
 			ArrayList <String> valueList = new ArrayList <String>();
 		}
 		table_name {tableName = $table_name.value;} colomn_declare
 		VALUES LPARSE consts 
 		{	
+
 			tempPosition = $colomn_declare.attrPosition.remove(i++);
 			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,(String)$consts.value); 
+				valueList.add(tempPosition,$consts.value); 
 				//add at specific index, after that index(include)
 				// would shift
-			else valueList.add((String)$consts.value);//just add at end
+			else valueList.add($consts.value);//just add at end
 		}
 		(COMMA consts {
-			valueList.add((String)$consts.value); 
+			valueList.add($consts.value); 
 			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,(String)$consts.value); 
-			else valueList.add((String)$consts.value);
+				valueList.add(tempPosition,$consts.value); 
+			else valueList.add($consts.value);
 
 		} )* RPARSE
 		{$query = new Insert(tableName, valueList); }
@@ -258,8 +271,10 @@ insert_into returns [Query query]
 
 colomn_declare returns[List <Integer> attrPosition] //return manual input position of values
 @init{Hashtable <String, Integer> attrPosTable = $attribute_list::attrPosTable;}		   
-	:	LPARSE colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value));}
-	 (COMMA colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value));} )* RPARSE
+	:		LPARSE colomn_name {System.out.println("column name is"+$colomn_name.value);
+		$attrPosition.add(attrPosTable.get($colomn_name.value)); }
+	 	(	COMMA  colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value)); } 
+	 	)* 	RPARSE
 	;
 
 select_from
@@ -298,7 +313,10 @@ operand
 	|	consts
 	;
 
-consts returns [Object value]
+/**
+changed it from object to string Shawn
+*/
+consts returns [String value]
 	:	x = type_int {$value = $x.value; }
 	|	z = type_varchar {$value = $z.value;}
 	;
@@ -342,9 +360,12 @@ table_alias_name returns [String value]
 		DBMS.dump($x.text);
 	};
   
-type_int returns [Integer value] 
+ /**
+ I changed it from Integer to String 
+ */
+type_int returns [String value]  
 	:	x=INT_IDENTI {
-		$value = new Integer($x.text);
+		$value = new String($x.text);
 		DBMS.dump($x.text);
 	};
   
