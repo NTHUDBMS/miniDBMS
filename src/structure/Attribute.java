@@ -61,5 +61,15 @@ private static final long serialVersionUID = 1L;
 		this.length = length;
 	}
 	
+	public String toString(){
+		return this.name;
+	}
 	
+	public boolean equals(Object o){
+		if(this.name.equals(o.toString()))
+			return true;
+		else
+			return false;
+		
+	}
 }

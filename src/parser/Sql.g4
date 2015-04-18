@@ -22,6 +22,7 @@ import dbms.*;
 	private final static int maxTuple = 100;
 	private final static int maxAttr = 5;
 	private final static DBExecutor executor = new DBExecutor();
+	private boolean inValid;
 	
 	public static void execute(Query query){
 		try{
@@ -29,6 +30,7 @@ import dbms.*;
     			DBMS.outConsole("execute: "+query.queryName);
     			executor.execute(query);
     		}
+    		else DBMS.outConsole("query fail\n----------");
     	}
 		catch (Error ex)
 		{
@@ -52,6 +54,7 @@ start
 	;
 
 instructions
+	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
 	|	select_from  
 	|	insert_into	{execute($insert_into.query);}
@@ -61,26 +64,23 @@ create_table returns[Query query]
  	locals [
 	 	String tableName,
 		String attrName,
-		//Attribute _attribute,
-		//Attribute.Type type,
 		int lengthToken
-		//ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
-		//ArrayList <Integer> primaryList = new ArrayList <Integer> (),
-		//Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>()
 	]
 	
 	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
 		LPARSE attribute_list RPARSE 
 		{
 			//DBMS.outConsole("query: create_table start");
-			$query = new Create(
-					$tableName, 
-					$attribute_list.r_attrList, 
-					$attribute_list.r_primaryList, 
-					$attribute_list.r_attrPosTable
-			);
-			$query.queryName = "Create Table";
-			DBMS.outConsole("create "+$tableName);
+			if(!inValid){
+				$query = new Create(
+						$tableName, 
+						$attribute_list.r_attrList, 
+						$attribute_list.r_primaryList, 
+						$attribute_list.r_attrPosTable
+				);
+				$query.queryName = "Create Table";
+				DBMS.outConsole("create "+$tableName);
+			}
 		}
 	;
 
@@ -131,28 +131,49 @@ attribute
 				);
 				$attribute_list::attrList.add(_attribute);
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
-			}else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
+			}else{
+				inValid=true;
+				DBMS.outConsole("CREATE TABLE: DUPLICATED ATTRIBUTES");
+			}
 		}
 	;
 
 
 primary_key 
-	@init{Attribute _attribute = $attribute_list::_attribute;}		
-	:	colomn_name types PRIMARY KEY{
+	@init{
+		Attribute _attribute = $attribute_list::_attribute;
+	}		
+	:	colomn_name types PRIMARY KEY {
+		String _attrName = $colomn_name.value;
 		_attribute = new Attribute($types.type, $colomn_name.value);
-		DBMS.outConsole("Primary key colomn_name is "+ $colomn_name.value);
+		//DBMS.outConsole("Primary key colomn_name is "+ $colomn_name.value);
+		
+		// check attribute list not empty
+		if ($attribute_list::attrList== null) {	
+			$attribute_list::attrList = new ArrayList<Attribute>();
+		}
+		
 		if (! $attribute_list::attrList.contains(_attribute)) {
 			$attribute_list::attrList.add(_attribute);
 			//save position of attribute name 
-			$attribute_list::attrPosTable.put($colomn_name.value, Integer.valueOf($attribute_list::attrList.size()));
+			$attribute_list::attrPosTable.put(
+				_attrName,
+				Integer.valueOf($attribute_list::attrList.size())
+			);
 		}
-		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
-		
-		if (!$attribute_list::primaryList.contains($colomn_name.value)) {
+		else{
+			inValid = true;
+			DBMS.outConsole("CREATE TABLE: DUPLICATED ATTRIBUTES");
+		}
+		if (!$attribute_list::primaryList.contains(_attrName)) {
 			//save position of attribute in primary list
-			$attribute_list::primaryList.add($attribute_list::attrPosTable.get($colomn_name.value));
+			$attribute_list::primaryList.add(
+				$attribute_list::attrPosTable.get(_attrName)
+			);
 		}
 		else throw new Error ("CREATE TABLE: INVALID PRIMARY KEY " + $colomn_name.value);
+		
+		DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
 	}
 	;
 
