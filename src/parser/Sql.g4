@@ -21,24 +21,22 @@ import dbms.*;
 	
 	private final static int maxTuple = 100;
 	private final static int maxAttr = 5;
+	
 	public static void execute(Query query){
 		DBExecutor executor;
 		executor = new DBExecutor();
-		while(true)
+		try{
+    		if (query != null) {
+    			DBMS.outConsole("Query is not null");
+    			executor.execute(query);
+    		}
+    	}
+		catch (Error ex)
 		{
-				try{
-		    		if (query != null) {
-		    			DBMS.outConsole("Query is not null");
-		    			executor.execute(query);
-		    		}
-		    	}
-				catch (Error ex)
-				{
-					System.err.println(ex.getMessage());
-					return;
-				}
-			}
-		}   	
+			System.err.println(ex.getMessage());
+			return;
+		}
+	}   	
 	
 
 	public static void pause(){
@@ -51,16 +49,14 @@ import dbms.*;
 	
 }
 start 
-	:	(instructions 
-		{execute($instructions.query);}
-		SCOL)* EOF
+	:	(instructions SCOL)* EOF
 	;
 
 instructions returns[Query query]
 	:	
-		create_table {$query = $create_table.query;}
+		create_table {execute($create_table.query);}
 	|	select_from  
-	|	insert_into	{$query = $insert_into.query;}
+	|	insert_into	{execute($insert_into.query);}
 	;
 
 create_table returns[Query query] 
@@ -81,15 +77,19 @@ create_table returns[Query query]
 			DBMS.outConsole("Start to create table");
 			$query = new Create(
 					$tableName, 
-					$attribute_list::attrList, 
-					$attribute_list::primaryList, 
-					$attribute_list::attrPosTable
+					$attribute_list.r_attrList, 
+					$attribute_list.r_primaryList, 
+					$attribute_list.r_attrPosTable
 			);
 		}
 	;
 
 
-attribute_list 
+attribute_list returns[
+		ArrayList <Attribute> r_attrList,
+		Hashtable <String, Integer> r_attrPosTable,
+		ArrayList <Integer> r_primaryList
+	]
 	locals[
 		Attribute _attribute,
 		ArrayList <Attribute> attrList,
@@ -97,14 +97,19 @@ attribute_list
 		ArrayList <Integer> primaryList = new ArrayList <Integer> ()
 	]
 	:	(attribute COMMA )* primary_key (COMMA attribute )*
-	|	attribute (COMMA attribute )*
+	|	attribute (COMMA attribute )*{
+			$r_attrList = $attrList;
+			$r_attrPosTable = $attrPosTable;
+			$r_primaryList = $primaryList;
+		}
 	
 	;
 
 
 attribute 
-	
-	@init{Attribute _attribute = $attribute_list::_attribute;}
+	@init{
+		Attribute _attribute = $attribute_list::_attribute;
+	}
 	:	colomn_name types {
 		String _attrName = $colomn_name.value;
 		_attribute = new Attribute($types.type, _attrName);
