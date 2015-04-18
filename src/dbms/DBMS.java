@@ -19,6 +19,7 @@ import parser.*;
  */
 public class DBMS {
 	public final static Boolean dumpParsingMsg = true;
+	public final static Boolean consoleMsg = true;
 	public final static String dumpFile = "Output.txt";
 	private static BufferedWriter os;
 	private static String inputFile;
@@ -28,9 +29,15 @@ public class DBMS {
 			
 			try{
 				os.write(s);
+				os.flush();
 			}catch(Exception e){}
 			
-			/*System.out.print(s);*/
+		}
+	}
+	
+	public static void outConsole(String s){
+		if(DBMS.consoleMsg){
+			System.out.println(s);
 		}
 	}
 	

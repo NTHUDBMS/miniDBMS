@@ -28,7 +28,7 @@ import dbms.*;
 		{
 				try{
 		    		if (query != null) {
-		    			System.out.println("Query is not null");
+		    			DBMS.outConsole("Query is not null");
 		    			executor.execute(query);
 		    		}
 		    	}
@@ -42,7 +42,7 @@ import dbms.*;
 	
 
 	public static void pause(){
-		System.out.println("Press Enter to continue.");
+		DBMS.outConsole("Press Enter to continue.");
 		try{
 			System.in.read();
 		}catch(Exception e){};
@@ -65,29 +65,36 @@ instructions returns[Query query]
 
 create_table returns[Query query] 
  	locals [
- 	String tableName,
-	String attrName,
-	//Attribute _attribute,
-	//Attribute.Type type,
-	int lengthToken
-	//ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
-	//ArrayList <Integer> primaryList = new ArrayList <Integer> (),
-	//Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>()
+	 	String tableName,
+		String attrName,
+		//Attribute _attribute,
+		//Attribute.Type type,
+		int lengthToken
+		//ArrayList <Attribute> attrList = new ArrayList <Attribute>(), 
+		//ArrayList <Integer> primaryList = new ArrayList <Integer> (),
+		//Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>()
 	]
 	
 	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
 		LPARSE attribute_list RPARSE 
-		{	System.out.println("Start to create table");
-			$query = new Create($tableName, $attribute_list::attrList, $attribute_list::primaryList, $attribute_list::attrPosTable);}
+		{
+			DBMS.outConsole("Start to create table");
+			$query = new Create(
+					$tableName, 
+					$attribute_list::attrList, 
+					$attribute_list::primaryList, 
+					$attribute_list::attrPosTable
+			);
+		}
 	;
 
 
 attribute_list 
 	locals[
-			Attribute _attribute,
-			ArrayList <Attribute> attrList,
-			Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(),
-			ArrayList <Integer> primaryList = new ArrayList <Integer> ()
+		Attribute _attribute,
+		ArrayList <Attribute> attrList,
+		Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(),
+		ArrayList <Integer> primaryList = new ArrayList <Integer> ()
 	]
 	:	(attribute COMMA )* primary_key (COMMA attribute )*
 	|	attribute (COMMA attribute )*
@@ -106,7 +113,7 @@ attribute
 			if ( ! $attribute_list::attrList.contains(_attribute)) {
 				$attribute_list::attrPosTable.put(_attrName, Integer.valueOf($attribute_list::attrList.size()));
 				$attribute_list::attrList.add(_attribute);
-				System.out.println("colomn name is" + _attrName);
+				DBMS.outConsole("colomn name is" + _attrName);
 			}	
 		}
 		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
@@ -118,7 +125,7 @@ primary_key
 	@init{Attribute _attribute = $attribute_list::_attribute;}		
 	:	colomn_name types PRIMARY KEY{
 		_attribute = new Attribute($types.type, $colomn_name.value);
-		System.out.println("Primary key colomn_name is "+ $colomn_name.value);
+		DBMS.outConsole("Primary key colomn_name is "+ $colomn_name.value);
 		if (! $attribute_list::attrList.contains(_attribute)) {
 			$attribute_list::attrList.add(_attribute);
 			//save position of attribute name 
