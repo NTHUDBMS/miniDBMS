@@ -93,9 +93,13 @@ attribute_list returns[
 	locals[
 		Attribute _attribute,
 		ArrayList <Attribute> attrList,
-		Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(),
-		ArrayList <Integer> primaryList = new ArrayList <Integer> ()
+		Hashtable <String, Integer> attrPosTable,
+		ArrayList <Integer> primaryList
 	]
+	@init{ //must use new here
+		$attrPosTable = new Hashtable <String, Integer>();
+		$primaryList = new ArrayList <Integer> ();
+	}
 	:	attribute (COMMA attribute )*{
 			$r_attrList = $attrList;
 			$r_attrPosTable = $attrPosTable;
@@ -156,10 +160,17 @@ primary_key
 		if (! $attribute_list::attrList.contains(_attribute)) {
 			$attribute_list::attrList.add(_attribute);
 			//save position of attribute name 
-			$attribute_list::attrPosTable.put(
-				_attrName,
-				Integer.valueOf($attribute_list::attrList.size())
-			);
+			System.out.println("####attrnam is "+_attrName + "attrlist.size "+ $attribute_list::attrList.size());
+			if($attribute_list::attrPosTable!= null)
+			{
+
+				$attribute_list::attrPosTable.put(
+					_attrName,
+					Integer.valueOf($attribute_list::attrList.size())
+				);
+				System.out.println("####put succeed");
+			}
+			else System.out.println("####put fail");
 		}
 		else{
 			inValid = true;
