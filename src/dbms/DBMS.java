@@ -74,7 +74,6 @@ public class DBMS {
 		        // start parse SQL
 		        System.out.println("----------Start Parsing-------------");
 		        parser.start();
-		        //parser.execute();
 
 		        //ParseTree tree = parser.start(); // begin parsing at start rule
 		        //System.out.println(tree.toStringTree(parser)); // print LISP-style tree

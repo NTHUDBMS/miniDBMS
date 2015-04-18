@@ -17,17 +17,16 @@ import dbms.*;
 
 }
 
-@members{
+@parser::members{
 	
 	private final static int maxTuple = 100;
 	private final static int maxAttr = 5;
+	private final static DBExecutor executor = new DBExecutor();
 	
 	public static void execute(Query query){
-		DBExecutor executor;
-		executor = new DBExecutor();
 		try{
     		if (query != null) {
-    			DBMS.outConsole("Query is not null");
+    			DBMS.outConsole("execute: "+query.queryName);
     			executor.execute(query);
     		}
     	}
@@ -52,9 +51,8 @@ start
 	:	(instructions SCOL)* EOF
 	;
 
-instructions returns[Query query]
-	:	
-		create_table {execute($create_table.query);}
+instructions
+	:	create_table {execute($create_table.query);}
 	|	select_from  
 	|	insert_into	{execute($insert_into.query);}
 	;
@@ -74,13 +72,15 @@ create_table returns[Query query]
 	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
 		LPARSE attribute_list RPARSE 
 		{
-			DBMS.outConsole("Start to create table");
+			DBMS.outConsole("query: create_table start");
 			$query = new Create(
 					$tableName, 
 					$attribute_list.r_attrList, 
 					$attribute_list.r_primaryList, 
 					$attribute_list.r_attrPosTable
 			);
+			$query.queryName = "Create Table";
+			DBMS.outConsole("create "+$tableName);
 		}
 	;
 
@@ -96,12 +96,12 @@ attribute_list returns[
 		Hashtable <String, Integer> attrPosTable = new Hashtable <String, Integer>(),
 		ArrayList <Integer> primaryList = new ArrayList <Integer> ()
 	]
-	:	(attribute COMMA )* primary_key (COMMA attribute )*
-	|	attribute (COMMA attribute )*{
+	:	attribute (COMMA attribute )*{
 			$r_attrList = $attrList;
 			$r_attrPosTable = $attrPosTable;
 			$r_primaryList = $primaryList;
 		}
+	|	(attribute COMMA )* primary_key (COMMA attribute )*
 	
 	;
 
@@ -111,18 +111,24 @@ attribute
 		Attribute _attribute = $attribute_list::_attribute;
 	}
 	:	colomn_name types {
-		String _attrName = $colomn_name.value;
-		_attribute = new Attribute($types.type, _attrName);
-		//not check condition
-		if ($attribute_list::attrList!= null) {	
-			if ( ! $attribute_list::attrList.contains(_attribute)) {
-				$attribute_list::attrPosTable.put(_attrName, Integer.valueOf($attribute_list::attrList.size()));
+			String _attrName = $colomn_name.value;
+			_attribute = new Attribute($types.type, _attrName);
+			
+			// check attribute list not empty
+			if ($attribute_list::attrList== null) {	
+				$attribute_list::attrList = new ArrayList<Attribute>();
+			}
+			
+			if (!$attribute_list::attrList.contains(_attribute)) {
+				// add attribute
+				$attribute_list::attrPosTable.put(
+					_attrName, 
+					Integer.valueOf($attribute_list::attrList.size())
+				);
 				$attribute_list::attrList.add(_attribute);
-				DBMS.outConsole("colomn name is" + _attrName);
-			}	
+				DBMS.outConsole("fetch colomn name: " + _attrName);
+			}else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		}
-		else throw new Error("CREATE TABLE: DUPLICATED ATTRIBUTES");
-	}
 	;
 
 

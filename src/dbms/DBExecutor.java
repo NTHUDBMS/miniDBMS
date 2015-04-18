@@ -19,6 +19,13 @@ public class DBExecutor{
 	 */
 	private static final String databaseDefUrl = "databaseDef.dat";
 	
+	
+	public DBExecutor(){
+		// clear databaseDefUrl
+		File tableFile = new File(databaseDefUrl);
+		tableFile.delete();
+	}
+	
 	/**
 	 *     While an SQL query has be parsed, DBExecutor gets
 	 * the query information and execute it.<br>
@@ -61,8 +68,10 @@ public class DBExecutor{
 	private void create(Create query)
 		throws IOException, Error, ClassNotFoundException 
 	{
+		// built hashTable by tableName as hash key
 		Hashtable<String, Table> tables = null;
-		//tablefile saves tables
+		
+		// save table as a file
 		File tableFile = new File(databaseDefUrl);
 		
 		//
@@ -73,18 +82,20 @@ public class DBExecutor{
 		}
 		
 		//
-		if (tables.get(query.getTableName())!= null) {
-			throw new Error("CREATE: Table: table" + query.getTableName()+ "is already exist");
+		if (!tables.containsKey(query.getTableName())) {
+			//store table in hash table
+			tables.put(query.getTableName(), query.getTable());
+			//write tables in tablefiles
+			this.writeTableDef(tableFile, tables);
+			
+			//dump message
+			System.out.println("Table is created");
+			
+		}else{
+			//DBMS.outConsole("get "+tables.get(query.getTableName()).getTableName());
+			throw new Error("CREATE Table:" + query.getTableName()+ " fail, already exist");
 		}
-
-		//store table in hash table
-		tables.put(query.getTableName(), query.getTable());
-		//write tables in tablefiles
-		this.writeTableDef(tableFile, tables);
 		
-		//dump message
-		System.out.println("Table is created");
-
 	}
 
 	/**
@@ -191,8 +202,6 @@ public class DBExecutor{
 	 * convert strings in values to different types of object in valueList
 	 * based on  attribute list 
 	 */
-
-
 	private ArrayList <Value> convertInsertValueType(Table tableDef, ArrayList <String> values) throws Error
 	{
 		  ArrayList <Value> valueList = new ArrayList <Value> ();
@@ -238,19 +247,25 @@ public class DBExecutor{
 		  return valueList;
 
 	}
-
-	/*used for creation
-	 * read in table from file
-	 */
 	
-
-	@SuppressWarnings("unchecked")
-	private Hashtable <String, Table> getTableDef()throws IOException, ClassNotFoundException{
+	/**
+	 * used for creation<br>
+	 * read in table from file
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	private Hashtable <String, Table> getTableDef()
+			throws IOException, ClassNotFoundException
+	{
 		Hashtable <String, Table> tables = null;
 		File tableFile = new File(databaseDefUrl);
+		
 		FileInputStream fileIn = new FileInputStream(tableFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
 		tables = (Hashtable<String, Table>) in.readObject();
+		
 		in.close();
 		fileIn.close();
 
