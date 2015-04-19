@@ -57,7 +57,7 @@ instructions
 	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
 	|	select_from  
-	|	insert_into	{}
+	|	insert_into	{DBMS.outConsole("------");}
 	;
 
 create_table returns[Query query] 
@@ -67,18 +67,21 @@ create_table returns[Query query]
 		int lengthToken
 	]
 	
-	:	CREATE TABLE table_name { $tableName = $table_name.value;} 
+	:	CREATE TABLE table_name { 
+			$tableName = $table_name.value;
+			DBMS.outConsole("create "+$tableName);
+		} 
 		LPARSE attribute_list RPARSE 
 		{
 			//DBMS.outConsole("query: create_table start");
 			if(!inValid){
+				
 				$query = new Create(
 						$tableName, 
 						$attribute_list.r_attrList, 
 						$attribute_list.r_primaryList, 
 						$attribute_list.r_attrPosTable
 				);
-				DBMS.outConsole("create "+$tableName);
 			}
 		}
 	;
@@ -95,15 +98,17 @@ attribute_list returns[
 		Hashtable <String, Integer> attrPosTable, // attribute position 
 		ArrayList <Integer> primaryList //
 	]
-	@init{ //must use new here
+	@init{
+		$attrList = new ArrayList <Attribute>();
 		$attrPosTable = new Hashtable <String, Integer>();
 		$primaryList = new ArrayList <Integer> ();
 	}
-	:	attribute (COMMA attribute )*{
-			$r_attrList = $attrList;
-			$r_attrPosTable = $attrPosTable;
-			$r_primaryList = $primaryList;
-		}
+	@after{
+		$r_attrList = $attrList;
+		$r_attrPosTable = $attrPosTable;
+		$r_primaryList = $primaryList;
+	}
+	:	attribute (COMMA attribute )*
 	|	(attribute COMMA )* primary_key (COMMA attribute )*
 	
 	;
@@ -121,10 +126,6 @@ attribute
 				$types.lengthToken
 			);
 			
-			// check attribute list not empty
-			if ($attribute_list::attrList== null) {	
-				$attribute_list::attrList = new ArrayList<Attribute>();
-			}
 			
 			// put attributes
 			if (!$attribute_list::attrList.contains(_attribute)) {
@@ -136,7 +137,10 @@ attribute
 					_attrName, 
 					Integer.valueOf($attribute_list::attrList.size())
 				);
+				
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
+				if(!$attribute_list::attrPosTable.containsKey(_attrName))
+					DBMS.outConsole("X");
 			}else{
 				inValid=true;
 				DBMS.outConsole("CREATE TABLE: DUPLICATED ATTRIBUTES");
@@ -173,9 +177,12 @@ primary_key
 					_attrName,
 					Integer.valueOf($attribute_list::attrList.size())
 				);
-				//System.out.println("#### save attr position succeed");
+				
+				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
+				if(!$attribute_list::attrPosTable.containsKey(_attrName))
+					DBMS.outConsole("X");
 			}
-			else System.out.println("#### save attr position fail");
+			else DBMS.outConsole("#### save attr position fail");
 		}
 		else{
 			inValid = true;
@@ -193,7 +200,7 @@ primary_key
 			 inValid = true;
 			DBMS.outConsole("CREATE TABLE: DUPLICATE PRIMARY KEY " + $colomn_name.value);
 		}
-		DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
+		
 	}
 	;
 
@@ -287,12 +294,10 @@ insert_into returns [Query query]
 			}
 		} 
 		colomn_declare{
-			
+			tempPosition = $colomn_declare.attrPosition.remove(i++);
 		} 
 		VALUES LPARSE consts 
 		{	
-
-			tempPosition = $colomn_declare.attrPosition.remove(i++);
 			if( tempPosition <= valueList.size()){
 				valueList.add(tempPosition,$consts.value); 
 				//add at specific index, after that index(include)
@@ -324,30 +329,31 @@ colomn_declare returns[
 		List <Integer> attrPosition //return manual input position of values
 	]
 	@init{
+		$attrPosition = new ArrayList<Integer>();
 		Hashtable <String, Integer> attrPosTable = null;
+		
 		if( $insert_into::table!=null){
 			attrPosTable = $insert_into::table.getAttrPosHashtable();
 			DBMS.outConsole("check table: "+$insert_into::table.getTableName());
 		}else {
 			DBMS.outConsole("insert_into::table null");
 		}
+
+	}
+	@after{
 		
-		if(attrPosTable == null)
-			DBMS.outConsole("attrPosTable null");
-		
-		$attrPosition = new ArrayList<Integer>();
-	}		   
+	}
 	:	LPARSE colomn_name {
 			if(attrPosTable!=null){
 				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(attrPosTable.get(i)); 
+				$attrPosition.add(i); 
 				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
 			}
 		}
 	 	(COMMA  colomn_name {
 	 		if(attrPosTable!=null){
 				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(attrPosTable.get(i)); 
+				$attrPosition.add(i); 
 				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
 			}
 	 	})* RPARSE

@@ -67,12 +67,12 @@ public class Table implements Serializable {
 		else
 			DBMS.outConsole("* attrList null");
 		
-		if(primaryList==null)
+		if(primaryList!=null)
 			this.primaryList = primaryList;
 		else
 			DBMS.outConsole("* primaryList null");
 		
-		if(attrPosTable==null)
+		if(attrPosTable!=null)
 			this.attrPosTable = attrPosTable;
 		else
 			DBMS.outConsole("* attrPosTable null");
