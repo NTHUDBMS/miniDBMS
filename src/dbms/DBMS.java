@@ -84,6 +84,8 @@ public class DBMS {
 				System.out.println("Fail to open SQL file");
 				throw new Error ("DBMS: fail to fetch the SQL queries.");
 			}
+		}else{
+			System.out.println("No Input SQL, Plz put sql file as argument.");
 		}
         
     }

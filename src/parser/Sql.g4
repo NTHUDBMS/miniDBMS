@@ -57,7 +57,7 @@ instructions
 	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
 	|	select_from  
-	|	insert_into	{execute($insert_into.query);}
+	|	insert_into	{}
 	;
 
 create_table returns[Query query] 
@@ -92,9 +92,9 @@ attribute_list returns[
 	]
 	locals[
 		Attribute _attribute,
-		ArrayList <Attribute> attrList,
-		Hashtable <String, Integer> attrPosTable,
-		ArrayList <Integer> primaryList
+		ArrayList <Attribute> attrList, //
+		Hashtable <String, Integer> attrPosTable, // attribute position 
+		ArrayList <Integer> primaryList //
 	]
 	@init{ //must use new here
 		$attrPosTable = new Hashtable <String, Integer>();
@@ -127,12 +127,15 @@ attribute
 				$attribute_list::attrList = new ArrayList<Attribute>();
 			}
 			
+			// put attributes
 			if (!$attribute_list::attrList.contains(_attribute)) {
-				// add attribute
+				// save position of attribute with ArrayList<String, Integer> 
 				$attribute_list::attrPosTable.put(
 					_attrName, 
 					Integer.valueOf($attribute_list::attrList.size())
 				);
+				
+				// add attribute
 				$attribute_list::attrList.add(_attribute);
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
 			}else{
@@ -148,42 +151,49 @@ primary_key
 		Attribute _attribute = $attribute_list::_attribute;
 	}		
 	:	colomn_name types PRIMARY KEY {
-		String _attrName = $colomn_name.value;
-		_attribute = new Attribute($types.type, $colomn_name.value);
-		//DBMS.outConsole("Primary key colomn_name is "+ $colomn_name.value);
+		String _attrName = $colomn_name.value; // temporary local variable
+		_attribute = new Attribute(
+			$types.type,
+			$colomn_name.value
+		);
 		
 		// check attribute list not empty
 		if ($attribute_list::attrList== null) {	
 			$attribute_list::attrList = new ArrayList<Attribute>();
 		}
 		
-		if (! $attribute_list::attrList.contains(_attribute)) {
+		// put attributes
+		if (!$attribute_list::attrList.contains(_attribute)){
+			// add into attribute list
 			$attribute_list::attrList.add(_attribute);
-			//save position of attribute name 
-			System.out.println("####attrnam is "+_attrName + "attrlist.size "+ $attribute_list::attrList.size());
+			
+			// save position of attribute with ArrayList<String, Integer> 
 			if($attribute_list::attrPosTable!= null)
 			{
-
 				$attribute_list::attrPosTable.put(
 					_attrName,
 					Integer.valueOf($attribute_list::attrList.size())
 				);
-				System.out.println("####put succeed");
+				//System.out.println("#### put succeed");
 			}
-			else System.out.println("####put fail");
+			else System.out.println("#### put fail");
 		}
 		else{
 			inValid = true;
 			DBMS.outConsole("CREATE TABLE: DUPLICATED ATTRIBUTES");
 		}
+		
+		// deal with primary key
 		if (!$attribute_list::primaryList.contains(_attrName)) {
 			//save position of attribute in primary list
 			$attribute_list::primaryList.add(
 				$attribute_list::attrPosTable.get(_attrName)
 			);
 		}
-		else throw new Error ("CREATE TABLE: INVALID PRIMARY KEY " + $colomn_name.value);
-		
+		else{
+			 inValid = true;
+			DBMS.outConsole("CREATE TABLE: INVALID PRIMARY KEY " + $colomn_name.value);
+		}
 		DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
 	}
 	;
@@ -209,45 +219,53 @@ length returns [int lengthToken]
 
 
 insert_into returns [Query query]
-	@init {int i = 0;
-		   int tempPosition;
-		   } //iterator for List <int> attrPosition 
-	:
-	 /*
-	 *insert tuples columns need to be in order 
-	 */
-		INSERT INTO 
+	@init {
+		 //iterator for List <int> attrPosition 
+		int i = 0;
+		int tempPosition;
+	}
+	:	INSERT INTO // insert without column declare
 		{
 			String tableName;
-			/**
-			input all element in string no need to convert type
-			will convert type in DBExecutor
-			*	
+			/*
+			* input all element in string no need to convert type
+			* will convert type in DBExecutor
 			*/
 			ArrayList <String> valueList = new ArrayList <String>();
 		}
-		table_name {tableName = $table_name.value;}
-		VALUES LPARSE consts {valueList.add($consts.value);} 
-		(COMMA consts {valueList.add($consts.value); } )* RPARSE
-		{$query = new Insert(tableName, valueList); }
-		
-		|
-
-		INSERT INTO 
-
+		table_name {
+			tableName = $table_name.value;
+		}
+		VALUES LPARSE consts {
+			valueList.add($consts.value);
+		} 
+		(COMMA consts {
+			valueList.add($consts.value);
+		})* RPARSE
 		{
-		/**
-		Insert into specific column, use List<Integer> attrPostion to track column index
-		these has to change to colomn type storing 
-		we don't know colomn position in the parsing phase
-		all we can do is to add element in each colomn list
-
-		*/
+			$query = new Insert(
+				tableName,
+				valueList
+			);
+			$query.queryName = "Insert Into";
+			DBMS.outConsole("insert");
+		}
+		
+	|	INSERT INTO // insert with column declaration
+		{
+		/*
+		 * Insert into specific column, use List<Integer> attrPostion to track column index
+		 * these has to change to colomn type storing 
+		 * we don't know colomn position in the parsing phase
+		 * all we can do is to add element in each colomn list
+		 */
 			String tableName;
 			ArrayList <String> valueList = new ArrayList <String>();
 		}
-		table_name {tableName = $table_name.value;} colomn_declare
-		VALUES LPARSE consts 
+		table_name {
+			tableName = $table_name.value;
+		} 
+		colomn_declare VALUES LPARSE consts 
 		{	
 
 			tempPosition = $colomn_declare.attrPosition.remove(i++);
@@ -264,17 +282,31 @@ insert_into returns [Query query]
 			else valueList.add($consts.value);
 
 		} )* RPARSE
-		{$query = new Insert(tableName, valueList); }
+		{
+			$query = new Insert(
+				tableName,
+				valueList
+			);
+			$query.queryName = "Insert Into";
+			DBMS.outConsole("insert");
+		}
 	;
 
 
 
-colomn_declare returns[List <Integer> attrPosition] //return manual input position of values
-@init{Hashtable <String, Integer> attrPosTable = $attribute_list::attrPosTable;}		   
-	:		LPARSE colomn_name {System.out.println("column name is"+$colomn_name.value);
-		$attrPosition.add(attrPosTable.get($colomn_name.value)); }
-	 	(	COMMA  colomn_name {$attrPosition.add(attrPosTable.get($colomn_name.value)); } 
-	 	)* 	RPARSE
+colomn_declare returns[
+		List <Integer> attrPosition //return manual input position of values
+	]
+	@init{
+		Hashtable <String, Integer> attrPosTable = $attribute_list::attrPosTable;
+	}		   
+	:	LPARSE colomn_name {
+			System.out.println("column name is"+$colomn_name.value);
+			$attrPosition.add(attrPosTable.get($colomn_name.value)); 
+		}
+	 	(COMMA  colomn_name {
+	 		$attrPosition.add(attrPosTable.get($colomn_name.value));
+	 	})* RPARSE
 	;
 
 select_from

@@ -5,16 +5,40 @@ import java.util.Hashtable;
 
 /**
  * 
+ * 
+ *
  */
 public class Table implements Serializable {
-	
+	/**
+	 * ???
+	 */
 	private static final long serialVersionUID = 1L;
 	
+	/**
+	 * Table name of the table
+	 */
 	private String tablename;
+	
+	/**
+	 * Attribute list of table
+	 */
 	private ArrayList<Attribute> attrList;
+	
+	/**
+	 * 
+	 */
 	private ArrayList<Integer> primaryList;
+	/**
+	 * 
+	 */
 	private Hashtable<String, ForeignReference> referenceTable;
+	/**
+	 * 
+	 */
 	private ArrayList<String> subSchemaList = null;
+	/**
+	 * Position of attributes 
+	 */
 	private Hashtable<String, Integer> attrPosTable;
 
 	

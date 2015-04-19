@@ -112,7 +112,7 @@ public class DBExecutor{
 			this.writeTableDef(tableFile, tables);
 			
 			//dump message
-			System.out.println("Table is created");
+			System.out.println("Table is created\n---------");
 			
 		}else{
 			//DBMS.outConsole("get "+tables.get(query.getTableName()).getTableName());
@@ -123,16 +123,16 @@ public class DBExecutor{
 
 	/**
 	 * The operation to perform SQL: INSERT.<br>
-	 * @param query
-	 * :The object contains the informations to be inserted.
+	 * get tuple list from file
+	 * convert new tuple in string to new tuple in types
+	 * check primary whether is repeated
+	 * if not store new added tuple list to type file
+	 * 
+	 * @param query : The object contains the informations to be inserted.
 	 * @throws IOException
 	 * @throws Error
 	 * @throws ClassNotFoundException
 	 * 
-	 * get tuple list from file
-	 * convert new tuple in string to new tuple in types
-	 * check primary whether is repeated
-	 * if not store new added tuple list to typle file
 	 */
 	public void insert (Insert query)
 			throws IOException, Error, ClassNotFoundException
@@ -141,7 +141,7 @@ public class DBExecutor{
 		ArrayList <Value> valueList = null;
 		ArrayList <ArrayList <Value>> tupleList;
 		Table table;
-		/**
+		/*
 		 * get table from tableFile
 		 */
 		
@@ -157,6 +157,7 @@ public class DBExecutor{
 			//exist table
 			//check values integrity and input in valuelist
 			valueList = this.convertInsertValueType(table, query.getValueList());
+			
 			File tupleFile = new File(query.getTableName() + ".db");
 			if (tupleFile.exists()) {
 				tupleList = this.getTupleList(tupleFile);
@@ -379,6 +380,7 @@ public class DBExecutor{
 		return new TuplesWithNameTable(newNameTable, newTupleList);
 
 	}
+	
 	private TuplesWithNameTable getTuplesBySelectedCond(Condition cond, TuplesWithNameTable tuples){
 		Hashtable<String, Integer> nameTable = tuples.getNameTable();
 
@@ -401,6 +403,7 @@ public class DBExecutor{
 		}
 		return new TuplesWithNameTable(nameTable, newTupleList);
 	}
+	
 	private TuplesWithNameTable combineTables(ArrayList<Table> tables, Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashtable, ArrayList<String> allAttributes, boolean selectAll, boolean isNormalUser){
 
 		//ArrayList<ArrayList<Value>> combinedTupleList = new ArrayList<ArrayList<Value>>();
@@ -535,12 +538,13 @@ public class DBExecutor{
 	}
 	
 	/**
-	 * @param tableDef table from the table file
-	 * @param values valueList from the query
+	 * Check insert value list's columns numbers whether the same as tables<br>
+	 * convert strings in values to different types of object in valueList<br>
+	 * based on  attribute list <br>
 	 * 
-	 * check insert value list's columns numbers whether the same with tables
-	 * convert strings in values to different types of object in valueList
-	 * based on  attribute list 
+	 * @param tableDef : table from the table file
+	 * @param values : valueList from the query
+
 	 */
 	private ArrayList <Value> convertInsertValueType(Table tableDef, ArrayList <String> values) throws Error
 	{
@@ -548,25 +552,28 @@ public class DBExecutor{
 		  ArrayList <Attribute> attrList = tableDef.getAttrList();
 		  String tableName = tableDef.getTableName();
 		  int attrSize = attrList.size();
+		  
+		  // check column amount with query value
 		  if (attrSize != valueList.size()) {
 		  		throw new Error("INSERT: The number of Values is not matched, Table"
 		  				+ tableName + "has " +attrSize + "Values");
 		  }
 
-		  //converting values and input valueList
+		  //iterate attribute list, convert values and input valueList
 		  for (int i = 0; i < attrSize; ++i) {
-		  	Attribute attribute = attrList.get(i);
+		  	Attribute attribute = attrList.get(i);	//
 		  	String strValue = values.get(i);
 
 		  	try{
 		  		Attribute.Type type = attribute.getType();
 
+		  		
 		  		if (type == Attribute.Type.INT) {
 		  			int intValue = Integer.parseInt(strValue);
 		  			Value value = new Value(intValue);
 		  			valueList.add(value);
 		  		}
-		  		/**
+		  		/*
 		  		 * need to check if varchar type string length exceed the create scheme defined
 		  		 */
 		  		else if(type == Attribute.Type.CHAR){
