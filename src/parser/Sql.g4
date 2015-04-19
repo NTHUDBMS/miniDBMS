@@ -226,23 +226,28 @@ length returns [int lengthToken]
 
 insert_into returns [Query query]
 	locals[
-		Table table
+		Table table,
 	]
 	@init {
 		 //iterator for List <int> attrPosition 
 		int i = 0;
 		int tempPosition;
-		
+		ArrayList <String> valueList = new ArrayList <String>();
+		String tableName = "";
+	}
+	@after{
+		$query = new Insert(
+			tableName,
+			valueList
+		);
+		DBMS.outConsole("insert into "+tableName);
 	}
 	:	INSERT INTO // insert without column declare
 		{
-			//DBMS.outConsole("Insert without column declare");
-			String tableName;
 			/*
 			* input all elements in string no need to convert type
 			* will convert type in DBExecutor
 			*/
-			ArrayList <String> valueList = new ArrayList <String>();
 		}
 		table_name {
 			tableName = $table_name.value;
@@ -251,76 +256,54 @@ insert_into returns [Query query]
 			try{
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
+			
 			if($table==null){
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
 			}
 		}
-		VALUES LPARSE consts {
-			valueList.add($consts.value);
-		} 
-		(COMMA consts {
-			valueList.add($consts.value);
-		})* RPARSE
-		{
-			$query = new Insert(
-				tableName,
-				valueList
-			);
-			DBMS.outConsole("insert into "+tableName);
-		}
+		VALUES LPARSE consts {	valueList.add($consts.value);} 
+		(COMMA consts {	valueList.add($consts.value);})* RPARSE
 		
-	|	INSERT INTO // insert with column declaration
-		{
-		/*
+	|	/*
 		 * Insert into specific column, use List<Integer> attrPostion to track column index
 		 * these has to change to colomn type storing 
 		 * we don't know colomn position in the parsing phase
 		 * all we can do is to add element in each colomn list
 		 */
-			String tableName;
-			ArrayList <String> valueList = new ArrayList <String>();
-		}
-		table_name {
+		 INSERT INTO table_name {
 			tableName = $table_name.value;
 			
 			// fetch table form hash
 			try{
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
+			
 			if($table==null){
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
+			}else{
+				for(int K=0; K <= $table.getAttrList().size(); K++){
+					valueList.add(K,"");
+				}
+				//DBMS.outConsole(Integer.toString(valueList.size()));
 			}
 		} 
-		colomn_declare{
-			tempPosition = $colomn_declare.attrPosition.remove(i++);
-		} 
-		VALUES LPARSE consts 
-		{	
-			if( tempPosition <= valueList.size()){
-				valueList.add(tempPosition,$consts.value); 
-				//add at specific index, after that index(include)
-				// would shift
-			}
-			else {
-				valueList.add($consts.value);//just add at end
-			}
+		colomn_declare VALUES LPARSE consts 
+		{
+			// pop attribute position
+			tempPosition = $colomn_declare.attrPosition.get(i++);
+			
+			// set by position
+			valueList.set(tempPosition, $consts.value); 
 		}
 		(COMMA consts {
-			valueList.add($consts.value); 
-			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,$consts.value); 
-			else valueList.add($consts.value);
-
+			// pop attribute position
+			tempPosition = $colomn_declare.attrPosition.get(i++);
+			
+			// set by position
+			valueList.set(tempPosition, $consts.value); 
 		} )* RPARSE
-		{
-			$query = new Insert(
-				tableName,
-				valueList
-			);
-			DBMS.outConsole("insert into "+tableName);
-		}
 	;
 
 
@@ -338,23 +321,30 @@ colomn_declare returns[
 		}else {
 			DBMS.outConsole("insert_into::table null");
 		}
-
-	}
-	@after{
 		
 	}
 	:	LPARSE colomn_name {
 			if(attrPosTable!=null){
-				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(i); 
-				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+				int i;
+				if(attrPosTable.containsKey($colomn_name.value)){
+					i = attrPosTable.get($colomn_name.value);
+					$attrPosition.add(i); 
+					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
+				}else{
+					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+				}
 			}
 		}
 	 	(COMMA  colomn_name {
 	 		if(attrPosTable!=null){
-				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(i); 
-				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+				int i;
+				if(attrPosTable.containsKey($colomn_name.value)){
+					i = attrPosTable.get($colomn_name.value);
+					$attrPosition.add(i); 
+					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
+				}else{
+					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+				}
 			}
 	 	})* RPARSE
 	;
@@ -506,7 +496,7 @@ DOUBLE_IDENTI
     |	((DIGIT)*'.'DIGIT);
     
 VARCHAR_IDENTI
-    : ('\'')~[\r\n]*('\'');
+    : ('\'')~[\r\n'\'']*('\'');
 
 SINGLE_LINE_COMMENT
 	: '--' ~[\r\n]* -> channel(HIDDEN);

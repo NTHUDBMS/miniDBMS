@@ -1,5 +1,8 @@
 package structure;
-
+/**
+ * 
+ * 
+ */
 public class Value implements java.io.Serializable {
 
 	private static final long serialVersionUID = 274565752285L;

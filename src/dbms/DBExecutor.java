@@ -668,6 +668,12 @@ public class DBExecutor{
 		return tupleList;
 	}
 
+	/**
+	 * 
+	 * @param tupleFile
+	 * @param tupleList
+	 * @throws IOException
+	 */
 	private void saveTupleList(File tupleFile, ArrayList <ArrayList <Value>> tupleList)throws IOException
 	{
 		FileOutputStream outFile = new FileOutputStream(tupleFile);
