@@ -2,8 +2,19 @@ package manageDatabase;
 import dbms.DBExecutor;
 import structure.Value;
 import java.util.*;
+
+/**
+ * Identifier Expression inherit Expression
+ * @see Exp
+ */
 public class IdExp extends Exp{
+	/**
+	 * Identifier
+	 */
 	private String id;
+	/**
+	 * 
+	 */
 	private static final long serialVersionUID = 184721213445224L;
 
 	public IdExp(String id){
@@ -13,8 +24,17 @@ public class IdExp extends Exp{
 	public String getId(){
 		return this.id;
 	}
-
-	public Object accept(DBExecutor visitor, Value value) { return visitor.visit(this, value); }
-
-	public Object accept(DBExecutor visitor, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple) { return visitor.visit(this, attrPosTable, tuple); }
+	
+	/**
+	 * @see Exp
+	 */
+	public Object accept(DBExecutor visitor, Value value) { 
+		return visitor.visit(this, value); 
+	}
+	/**
+	 * @see Exp
+	 */
+	public Object accept(DBExecutor visitor, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple) {
+		return visitor.visit(this, attrPosTable, tuple); 
+	}
 }

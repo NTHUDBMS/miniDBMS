@@ -10,5 +10,8 @@ package manageDatabase;
  */
 
 public class Query {
+	/**
+	 * Type of the query
+	 */
 	public String queryName;
 }

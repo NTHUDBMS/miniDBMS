@@ -12,7 +12,13 @@ import java.util.ArrayList;
  */
 
 public class Insert extends Query{
+	/**
+	 * Values to be inserted, collected while parsing
+	 */
 	private ArrayList<String> valueList;
+	/**
+	 * Target table to be inserted
+	 */
 	private String tableName;
 	
 	/**

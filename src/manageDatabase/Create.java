@@ -6,14 +6,47 @@ import java.util.Hashtable;
 import structure.Attribute;
 import structure.Table;
 
+/**
+ * Create Inherit Query<br>
+ * Realized while parsing SQL query.<br>
+ * Contains: table name, Attribute name list, Attribute Position table, Primary List. 
+ * 
+ * @see Query DBExecutor
+ */
 public class Create extends Query{
+	
+	/**
+	 * List of Attributes
+	 */
 	private ArrayList <Attribute> attributes;
+	
+	/**
+	 * Position table of Primary key
+	 */
 	private ArrayList <Integer> primary;
+	
+	/**
+	 * Position table of Attribute
+	 */
 	private Hashtable <String, Integer> attrPosTable; //used for attribute position in attributes
+	
+	/**
+	 * Table name
+	 */
 	private String tableName;
 	
-	public Create(String tableName, ArrayList <Attribute> attrList, ArrayList<Integer> primary, 
-				  Hashtable <String, Integer> attrPosTable) {
+	/**
+	 * Constructor with:<br>
+	 * table name<br>attribute list<br> Primary Position table<br>Attribute Postion table<br>
+	 * <br>
+	 */
+	public Create(
+			String tableName,
+			ArrayList <Attribute> attrList, 
+			ArrayList<Integer> primary, 
+			Hashtable <String, Integer> attrPosTable
+			) 
+	{
 		this.queryName = "Create";
 		this.tableName = tableName;
 		this.attributes = attrList;
@@ -21,20 +54,42 @@ public class Create extends Query{
 		this.attrPosTable = attrPosTable;
 	}
 	
+	/**
+	 * Getter of table name
+	 * @return table name
+	 */
 	public String getTableName(){
 		return tableName;
 	}
+	/**
+	 * Getter of attribute list
+	 * @return list of attributes
+	 */
 	public ArrayList <Attribute> getAttributes(){
 		return this.attributes;
 	}
+	
+	/**
+	 * Getter of Primary key position table
+	 * @return primary key table
+	 */
 	public ArrayList<Integer> getPrimary(){
 		return this.primary;
 	}
 	
+	/**
+	 * Getter of table
+	 * @return table
+	 */
 	public Table getTable(){
 		return new Table(this.tableName, this.attributes, this.primary);
 	}
 
+	/**
+	 * Get the attribute position of specified column name
+	 * @param valueName : name of the column
+	 * @return position of the column
+	 */
 	public int getAttrPos(String valueName){
 		if(this.attrPosTable.containsKey(valueName)){
 			return this.attrPosTable.get(valueName).intValue();
