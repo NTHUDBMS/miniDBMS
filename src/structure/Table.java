@@ -2,6 +2,8 @@ package structure;
 import java.io.Serializable;
 import java.util.*;
 
+import dbms.DBMS;
+
 /**
  * 
  * 
@@ -24,9 +26,14 @@ public class Table implements Serializable {
 	private ArrayList<Attribute> attrList;
 	
 	/**
-	 * 
+	 * Primary key position table
 	 */
 	private ArrayList<Integer> primaryList;
+	/**
+	 * Position of attributes 
+	 */
+	private Hashtable<String, Integer> attrPosTable;
+
 	/**
 	 * 
 	 */
@@ -35,17 +42,40 @@ public class Table implements Serializable {
 	 * 
 	 */
 	private ArrayList<String> subSchemaList = null;
+	
 	/**
-	 * Position of attributes 
+	 * 
+	 * @param tableName : table name
+	 * @param attrList : List of attribute
+	 * @param primaryList : primary key position
+	 * @param attrPosTable : attribute position
 	 */
-	private Hashtable<String, Integer> attrPosTable;
-
-	
-	
-	public Table(String tableName, ArrayList<Attribute> attrList, ArrayList<Integer> primaryList) {
-		this.tablename = tableName;
-		this.attrList = attrList;
-		this.primaryList = primaryList;
+	public Table(
+			String tableName, 
+			ArrayList<Attribute> attrList, 
+			ArrayList<Integer> primaryList,
+			Hashtable<String, Integer> attrPosTable
+			) 
+	{
+		if(tableName!=null)
+			this.tablename = tableName;
+		else
+			DBMS.outConsole("* table name null");
+		
+		if(attrList!=null)
+			this.attrList = attrList;
+		else
+			DBMS.outConsole("* attrList null");
+		
+		if(primaryList==null)
+			this.primaryList = primaryList;
+		else
+			DBMS.outConsole("* primaryList null");
+		
+		if(attrPosTable==null)
+			this.attrPosTable = attrPosTable;
+		else
+			DBMS.outConsole("* attrPosTable null");
 	}
 	
 	

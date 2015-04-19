@@ -107,7 +107,7 @@ public class DBExecutor{
 		//
 		if (!tables.containsKey(query.getTableName())) {
 			//store table in hash table
-			tables.put(query.getTableName(), query.getTable());
+			tables.put(query.getTableName(), query.makeTable());
 			//write tables in tablefiles
 			this.writeTableDef(tableFile, tables);
 			

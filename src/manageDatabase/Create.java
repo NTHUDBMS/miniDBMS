@@ -78,11 +78,11 @@ public class Create extends Query{
 	}
 	
 	/**
-	 * Getter of table
+	 * new a table
 	 * @return table
 	 */
-	public Table getTable(){
-		return new Table(this.tableName, this.attributes, this.primary);
+	public Table makeTable(){
+		return new Table(this.tableName, this.attributes, this.primary, this.attrPosTable);
 	}
 
 	/**

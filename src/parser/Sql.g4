@@ -229,7 +229,7 @@ insert_into returns [Query query]
 	}
 	:	INSERT INTO // insert without column declare
 		{
-			DBMS.outConsole("Insert without column declare");
+			//DBMS.outConsole("Insert without column declare");
 			String tableName;
 			/*
 			* input all elements in string no need to convert type
@@ -327,22 +327,29 @@ colomn_declare returns[
 		Hashtable <String, Integer> attrPosTable = null;
 		if( $insert_into::table!=null){
 			attrPosTable = $insert_into::table.getAttrPosHashtable();
-			DBMS.outConsole("get table: "+$insert_into::table.getTableName());
+			DBMS.outConsole("check table: "+$insert_into::table.getTableName());
 		}else {
-			DBMS.outConsole("table not found");
+			DBMS.outConsole("insert_into::table null");
 		}
+		
+		if(attrPosTable == null)
+			DBMS.outConsole("attrPosTable null");
 		
 		$attrPosition = new ArrayList<Integer>();
 	}		   
 	:	LPARSE colomn_name {
-			DBMS.outConsole("fetch target column: "+$colomn_name.value);
-			if(attrPosTable!=null)
-				$attrPosition.add(attrPosTable.get($colomn_name.value)); 
+			if(attrPosTable!=null){
+				int i = attrPosTable.get($colomn_name.value);
+				$attrPosition.add(attrPosTable.get(i)); 
+				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+			}
 		}
 	 	(COMMA  colomn_name {
-	 		DBMS.outConsole("fetch target column: "+$colomn_name.value);
-	 		if(attrPosTable!=null)
-				$attrPosition.add(attrPosTable.get($colomn_name.value));
+	 		if(attrPosTable!=null){
+				int i = attrPosTable.get($colomn_name.value);
+				$attrPosition.add(attrPosTable.get(i)); 
+				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+			}
 	 	})* RPARSE
 	;
 
