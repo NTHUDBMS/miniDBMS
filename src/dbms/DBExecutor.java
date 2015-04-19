@@ -191,6 +191,7 @@ public class DBExecutor{
 		Hashtable<String, Table> tables = null;
 		boolean isNormalUser = query.isNormalUser();
 		File tableFile = new File(databaseDefUrl);
+		
 		//Check if database defined
 		if(tableFile.exists()){
 			tables = this.getTableDef();
@@ -323,6 +324,20 @@ public class DBExecutor{
 		printTable(selectedValuesTable);
 	}
 
+	/**
+	 * Get table by name from table pool.<br>
+	 * 
+	 * @param name : table name
+	 * @return 
+	 *   Table object stored in hashtable.<br>Return null if not found.
+	 *   
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	public Table getTableByName(String name) throws ClassNotFoundException, IOException{
+		Hashtable<String, Table> tables = this.getTableDef();
+		return tables.get(name);
+	}
 
 	private void printTable(TuplesWithNameTable tuplesTable){
 		System.out.println();
@@ -613,16 +628,19 @@ public class DBExecutor{
 		FileInputStream fileIn = new FileInputStream(tableFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
 		tables = (Hashtable<String, Table>) in.readObject();
-		
 		in.close();
 		fileIn.close();
 
 		return tables;
 	}
-	/*
-	 * write table into file
-	 */
 	
+	/**
+	 * Write table object into binary file(.dat)<br>
+	 * 
+	 * @param tableFile : file
+	 * @param tables : hash table of tables
+	 * @throws IOException
+	 */
 	private void writeTableDef(File tableFile, Hashtable<String, Table>tables)throws IOException
 	{
 		FileOutputStream outFile = new FileOutputStream(tableFile);
@@ -660,25 +678,38 @@ public class DBExecutor{
 	}
 	
 	
-	
-	@SuppressWarnings("unused")
-	public Object visit(BinaryExp exp, Value value, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+	/**
+	 * 
+	 * @param bExp : binary expression
+	 * @param value : 
+	 * @param attrPosTable
+	 * @param tuple
+	 * @return
+	 */
+	public Object visit(
+			BinaryExp bExp, 
+			Value value, 
+			Hashtable<String, Integer> attrPosTable, 
+			ArrayList<Value> tuple)
+	{
 		//System.err.println("Enter into BinaryExp ");//
-		String op = exp.getOp();
+		String op = bExp.getOp();
 		Object ret = null;
 		
 		
 		//this is unused!!
-		if(exp == null){
+		if(bExp == null){
 			return Boolean.valueOf(true);
 		}
 	
-		Exp left = exp.getLeft();
-		Exp right = exp.getRight();
+		
+		Exp left = bExp.getLeft();
+		Exp right = bExp.getRight();
 	
 		Object leftOp = null;
 		Object rightOp = null;
 	
+		
 		if(left != null){
 			//System.err.println("Left not null " + op);//
 			if(tuple == null){
@@ -698,7 +729,10 @@ public class DBExecutor{
 			}
 		}
 	
-		if( ( (leftOp instanceof Integer) || (leftOp instanceof Double) ) && ( (rightOp instanceof Integer) || (rightOp instanceof Double) )){
+		//
+		if( ((leftOp instanceof Integer) || (leftOp instanceof Double)) 
+				&& ((rightOp instanceof Integer) || (rightOp instanceof Double)))
+		{
 			
 			 double l, r;
 			if(leftOp instanceof Integer){
@@ -740,6 +774,7 @@ public class DBExecutor{
 	    		return ret;
 		}
 	
+		
 		if((leftOp instanceof String) && (rightOp instanceof String)){
 			if(op.equals("=")){
 				if( ( (String)leftOp).equals((String) rightOp)){

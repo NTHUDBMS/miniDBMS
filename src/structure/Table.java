@@ -1,7 +1,6 @@
 package structure;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.*;
 
 /**
  * 
@@ -81,7 +80,11 @@ public class Table implements Serializable {
 		this.referenceTable = referenceTable;
 	}
 	
-
+	/**
+	 * Get Attribute position
+	 * @param valueName : name of attribute
+	 * @return
+	 */
 	public int getAttrPos(String valueName){
 		if(this.attrPosTable.containsKey(valueName)){
 			return this.attrPosTable.get(valueName).intValue();
@@ -90,6 +93,10 @@ public class Table implements Serializable {
 		}	
 	}
 
+	/**
+	 * Get attribute position table
+	 * @return
+	 */
 	public Hashtable<String, Integer> getAttrPosHashtable(){
 		return this.attrPosTable;
 	}
