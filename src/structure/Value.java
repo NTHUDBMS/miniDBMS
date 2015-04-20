@@ -14,6 +14,11 @@ public class Value implements java.io.Serializable {
 	 * Value type that parsed in SQL command
 	 */
 	private Attribute.Type type;
+	
+	/**
+	 * true if is null
+	 */
+	private boolean isNull;
 
 	/**
 	 * Value if type is Integer
@@ -24,6 +29,11 @@ public class Value implements java.io.Serializable {
 	 */
 	private String charValue;
 
+	public Value(){
+		this.type = Attribute.Type.NULL;
+		this.isNull = true;
+	}
+	
 	/**
 	 * Construct by integer
 	 * @param intValue : integer value
@@ -31,6 +41,7 @@ public class Value implements java.io.Serializable {
 	public Value(int intValue){
 		this.intValue = intValue;
 		this.type = Attribute.Type.INT;
+		this.isNull = false;
 	}
 
 	/**
@@ -40,6 +51,7 @@ public class Value implements java.io.Serializable {
 	public Value(String charValue){
 		this.charValue = charValue;
 		this.type = Attribute.Type.CHAR;
+		this.isNull = false;
 	}
 
 	/**
@@ -105,5 +117,9 @@ public class Value implements java.io.Serializable {
 		}
 		return false;
 
+	}
+
+	public boolean isNull() {
+		return isNull;
 	}
 }

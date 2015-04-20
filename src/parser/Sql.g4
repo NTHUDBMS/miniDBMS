@@ -252,7 +252,7 @@ insert_into returns [Query query]
 			ArrayList<Integer> pList = $table.getPrimaryList();
 			boolean legal = true;
 			for(i=0; i<pList.size(); i++){
-				DBMS.outConsole("PrimaryKey: "+Integer.toString(pList.get(i))+"-"+valueList.get(pList.get(i)));
+				//DBMS.outConsole("PrimaryKey: "+Integer.toString(pList.get(i))+"-"+valueList.get(pList.get(i)));
 				if(valueList.get(pList.get(i))==null){
 					legal = false;
 					DBMS.outConsole("PrimaryKey null: "+Integer.toString(i)+"-"+valueList.get(pList.get(i)));

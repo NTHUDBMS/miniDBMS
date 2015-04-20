@@ -9,7 +9,7 @@ public class Attribute implements Serializable {
 private static final long serialVersionUID = 1L;
 	
 	public static enum Type{
-		INT, CHAR
+		INT, CHAR, NULL
 	}
 
 	//these value will be serialized
