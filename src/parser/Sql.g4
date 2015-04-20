@@ -247,12 +247,6 @@ insert_into returns [Query query]
 		}
 	}
 	:	INSERT INTO // insert without column declare
-		{
-			/*
-			* input all elements in string no need to convert type
-			* will convert type in DBExecutor
-			*/
-		}
 		table_name {
 			tableName = $table_name.value;
 			
@@ -267,17 +261,9 @@ insert_into returns [Query query]
 			}
 		}
 		VALUES LPARSE consts {	valueList.add($consts.value);} 
-		(COMMA consts {	valueList.add($consts.value);})* RPARSE{
-			//DBMS.outConsole("list size: "+Integer.toString(valueList.size()));
-		}
+		(COMMA consts {	valueList.add($consts.value);})* RPARSE
 		
-	|	/*
-		 * Insert into specific column, use List<Integer> attrPostion to track column index
-		 * these has to change to colomn type storing 
-		 * we don't know colomn position in the parsing phase
-		 * all we can do is to add element in each colomn list
-		 */
-		 INSERT INTO table_name {
+	|	INSERT INTO table_name { // insert with column declare
 			tableName = $table_name.value;
 			
 			// fetch table form hash
@@ -285,6 +271,7 @@ insert_into returns [Query query]
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
 			
+			// check table exist, and initialize valueList to collect values
 			if($table==null){
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
@@ -343,7 +330,7 @@ colomn_declare returns[
 					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
 				}else{
 					inValid = true;
-					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
 				}
 			}
 		}
@@ -356,7 +343,7 @@ colomn_declare returns[
 					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
 				}else{
 					inValid = true;
-					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
 				}
 			}
 	 	})* RPARSE
@@ -398,12 +385,13 @@ operand
 	|	consts
 	;
 
-/**
-changed it from object to string Shawn
-*/
 consts returns [String value]
 	:	x = type_int {$value = $x.value; }
 	|	z = type_varchar {$value = $z.value;}
+	|	{
+		// null value
+		
+	}
 	;
 
 compare

@@ -520,35 +520,35 @@ public class DBExecutor{
 	}
 
 	
-	//cannot be null is not yet implemented
-	//primary key cannot be null or repeated!!!!
 	/**
-	 * 
-	 * @param primaryList
-	 * store primary attribute position in table
-	 * @param tupleList
-	 * old tuple list
-	 * @param newValueList
-	 * new tuple list to check if primary repeated in old
-	 * @return
+	 *  Check primary key value repeat, using equals()
+	 * @param primaryList : primary attribute position table
+	 * @param tupleList : tuple list of a table
+	 * @param tuple : the tuple(valueList) to check if primary repeated in old
+	 * @return 
+	 *  true if not repeated, false if repeated
+	 * @see Value
 	 */
-	private boolean checkPrimarys(ArrayList <Integer> primaryList, ArrayList <ArrayList <Value>> tupleList, ArrayList <Value> newValueList)
+	private boolean checkPrimarys(
+			ArrayList <Integer> primaryList, 
+			ArrayList <ArrayList <Value>> tupleList, 
+			ArrayList <Value> tuple)
 	{
+		boolean isCorrect = true;
+		
 		//check every tuple
-		for (ArrayList <Value> tuple: tupleList ) {
-			boolean isCorrect = false; //the flag is set to false every time
-			// in each tuple check primary key in newvaluelist whether is repeated  
-			for (Integer primaryPos : primaryList) {
-				if (!newValueList.get(primaryPos).equals(tuple.get(primaryPos))) {
-					isCorrect = true;
+		LABEL_OUTTER:
+		for (ArrayList <Value> tupleIterator: tupleList ) {
+			// in each tuple check primary key in new valueList whether is repeated  
+			for (Integer primaryPosition : primaryList) {
+				// true if equals
+				if (tuple.get(primaryPosition).equals(tupleIterator.get(primaryPosition))) {
+					isCorrect = false;
+					break LABEL_OUTTER;
 				}
 			}
-			if (isCorrect == false) { //end the loop no need to check each
-				return false;
-			}
-
 		}
-		return true;
+		return isCorrect;
 
 	}
 	
@@ -593,14 +593,14 @@ public class DBExecutor{
 		  		 * need to check if varchar type string length exceed the create scheme defined
 		  		 */
 		  		else if(type == Attribute.Type.CHAR){
-		  			//check type and length  //' ' +length of string
+		  			//check type and length 
 		  			if (attribute.getLength() < strValue.length()) {
-		  				throw new NumberFormatException();
+		  				DBMS.outConsole("Missmatch length: "+attribute.getLength()+" "+strValue.length());
+		  				throw new Error("INSERT: Value " + strValue + "length: "+attribute.getLength()+"<->"+strValue.length()+" mismatch");
 		  			}
 		  			Value charValue = new Value(strValue);
 		  			valueList.add(charValue);
 		  		}
-
 		  	}
 		  	catch(NumberFormatException ex){
 		  		throw new Error("INSERT: Value " + strValue + "is wrong type or exceed length");
