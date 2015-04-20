@@ -289,8 +289,8 @@ insert_into returns [Query query]
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
 			}else{
-				// initialize list with size+1 space to avoid index out of bound
-				for(int K=0; K <= $table.getAttrList().size(); K++){
+				// initialize list with size space
+				for(int K=0; K < $table.getAttrList().size(); K++){
 					valueList.add(K,"");
 				}
 				//DBMS.outConsole(Integer.toString(valueList.size()));
@@ -300,26 +300,21 @@ insert_into returns [Query query]
 		{
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++);
+				tempPosition = $colomn_declare.attrPosition.get(i++)-1;
 				
 				// set by position
-				valueList.set(tempPosition-1, $consts.value); 
+				valueList.set(tempPosition, $consts.value); 
 			}
 		}
 		(COMMA consts {
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++);
+				tempPosition = $colomn_declare.attrPosition.get(i++)-1;
 				
 				// set by position
-				valueList.set(tempPosition-1, $consts.value); 
+				valueList.set(tempPosition, $consts.value); 
 			} 
 		} )* RPARSE
-		{
-			// take out additional list space
-			valueList.remove(valueList.size()-1);
-			//DBMS.outConsole("list size: "+Integer.toString(valueList.size()));
-		}
 	;
 
 
