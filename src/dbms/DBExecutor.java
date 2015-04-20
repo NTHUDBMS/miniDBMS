@@ -152,37 +152,37 @@ public class DBExecutor{
 			throw new Error("INSERT: No database defined");
 		}
 		
-		//do the hash
-		if ((table = tables.get(query.getTableName()))!= null ) {
-			//exist table
-			//check values integrity and input in valuelist
+		// do the hash
+		if ((table = tables.get(query.getTableName()))!= null ) { 
+			// table exist 
+			// check values integrity and input in valueList
 			valueList = this.convertInsertValueType(table, query.getValueList());
 			
 			File tupleFile = new File(query.getTableName() + ".db");
 			if (tupleFile.exists()) {
 				tupleList = this.getTupleList(tupleFile);
 			}
-			else
+			else{
 				tupleList = new ArrayList <ArrayList <Value>> ();
+			}
+			
 			if (tupleList != null && valueList != null) {
 				boolean primarykeysNotRepeat = this.checkPrimarys(table.getPrimaryList(), tupleList, valueList);
 
 				if (primarykeysNotRepeat) {
 					tupleList.add(valueList);
 				}else{
-					throw new Error ("INSERT: primary key is repeated or null");
+					throw new Error ("INSERT: primary key is repeated or null\n");
 				}
-
 			}
+			
 			//see if we can just save one tuple instead of all tuples
 			this.saveTupleList(tupleFile, tupleList);
-			System.out.println("Tuple inserted successfully");
+			System.out.println("Tuple inserted successfully\n---------");
 
 		}else{
-			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found");
+			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found\n");
 		}
-
-
 	}
 	
 	
@@ -568,10 +568,12 @@ public class DBExecutor{
 		  String tableName = tableDef.getTableName();
 		  int attrSize = attrList.size();
 		  
+		  //DBMS.outConsole("size: "+Integer.toString(attrList.size())+" "+Integer.toString(tableDef.getAttrList().size()));
+		  
 		  // check column amount with query value
-		  if (attrSize != valueList.size()) {
-		  		throw new Error("INSERT: The number of Values is not matched, Table"
-		  				+ tableName + "has " +attrSize + "Values");
+		  if (attrSize != tableDef.getAttrList().size()) {
+		  		throw new Error("INSERT: The number of Values is not matched, Table: "
+		  				+ tableName + " has " +attrSize + " Values");
 		  }
 
 		  //iterate attribute list, convert values and input valueList

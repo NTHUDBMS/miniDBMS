@@ -57,7 +57,7 @@ instructions
 	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
 	|	select_from  
-	|	insert_into	{DBMS.outConsole("------");}
+	|	insert_into	{execute($insert_into.query);}
 	;
 
 create_table returns[Query query] 
@@ -66,16 +66,13 @@ create_table returns[Query query]
 		String attrName,
 		int lengthToken
 	]
-	
 	:	CREATE TABLE table_name { 
 			$tableName = $table_name.value;
 			DBMS.outConsole("create "+$tableName);
 		} 
-		LPARSE attribute_list RPARSE 
-		{
+		LPARSE attribute_list RPARSE {
 			//DBMS.outConsole("query: create_table start");
 			if(!inValid){
-				
 				$query = new Create(
 						$tableName, 
 						$attribute_list.r_attrList, 
@@ -84,6 +81,7 @@ create_table returns[Query query]
 				);
 			}
 		}
+		
 	;
 
 
@@ -236,11 +234,17 @@ insert_into returns [Query query]
 		String tableName = "";
 	}
 	@after{
-		$query = new Insert(
-			tableName,
-			valueList
-		);
-		DBMS.outConsole("insert into "+tableName);
+		if(!inValid){
+			$query = new Insert(
+				tableName,
+				valueList
+			);
+			DBMS.outConsole("Insert Into "+tableName);
+			DBMS.outConsole("Value:");
+			for(int j=0; j<valueList.size(); j++){
+				DBMS.outConsole(Integer.toString(j)+": "+valueList.get(j));
+			}
+		}
 	}
 	:	INSERT INTO // insert without column declare
 		{
@@ -263,7 +267,9 @@ insert_into returns [Query query]
 			}
 		}
 		VALUES LPARSE consts {	valueList.add($consts.value);} 
-		(COMMA consts {	valueList.add($consts.value);})* RPARSE
+		(COMMA consts {	valueList.add($consts.value);})* RPARSE{
+			//DBMS.outConsole("list size: "+Integer.toString(valueList.size()));
+		}
 		
 	|	/*
 		 * Insert into specific column, use List<Integer> attrPostion to track column index
@@ -283,6 +289,7 @@ insert_into returns [Query query]
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
 			}else{
+				// initialize list with size+1 space to avoid index out of bound
 				for(int K=0; K <= $table.getAttrList().size(); K++){
 					valueList.add(K,"");
 				}
@@ -291,19 +298,28 @@ insert_into returns [Query query]
 		} 
 		colomn_declare VALUES LPARSE consts 
 		{
-			// pop attribute position
-			tempPosition = $colomn_declare.attrPosition.get(i++);
-			
-			// set by position
-			valueList.set(tempPosition, $consts.value); 
+			if(!inValid){
+				// pop attribute position
+				tempPosition = $colomn_declare.attrPosition.get(i++);
+				
+				// set by position
+				valueList.set(tempPosition-1, $consts.value); 
+			}
 		}
 		(COMMA consts {
-			// pop attribute position
-			tempPosition = $colomn_declare.attrPosition.get(i++);
-			
-			// set by position
-			valueList.set(tempPosition, $consts.value); 
+			if(!inValid){
+				// pop attribute position
+				tempPosition = $colomn_declare.attrPosition.get(i++);
+				
+				// set by position
+				valueList.set(tempPosition-1, $consts.value); 
+			} 
 		} )* RPARSE
+		{
+			// take out additional list space
+			valueList.remove(valueList.size()-1);
+			//DBMS.outConsole("list size: "+Integer.toString(valueList.size()));
+		}
 	;
 
 
@@ -331,6 +347,7 @@ colomn_declare returns[
 					$attrPosition.add(i); 
 					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
 				}else{
+					inValid = true;
 					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
 				}
 			}
@@ -343,6 +360,7 @@ colomn_declare returns[
 					$attrPosition.add(i); 
 					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
 				}else{
+					inValid = true;
 					DBMS.outConsole("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
 				}
 			}
@@ -443,8 +461,10 @@ type_int returns [String value]
   
 type_varchar returns [String value] 
 	:	x=VARCHAR_IDENTI {
-		$value = new String($x.text);
-		DBMS.dump($x.text);
+		String temp = new String($x.text);
+		String[] split = temp.split("\'");
+		$value = split[1];
+		DBMS.dump($value);
 	};
 
 ALTER   : A L T E R;
@@ -541,6 +561,7 @@ fragment X : [xX];
 fragment Y : [yY];
 fragment Z : [zZ];
 
+APOS   : '\'' ;
 SCOL   : ';' {DBMS.dump(";");};
 DOT    : '.' {DBMS.dump(".");};
 LPARSE : '(' {DBMS.dump("(");};
