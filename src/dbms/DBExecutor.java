@@ -138,13 +138,12 @@ public class DBExecutor{
 			throws IOException, Error, ClassNotFoundException
 	{
 		Hashtable <String, Table> tables = null;
-		ArrayList <Value> valueList = null;
 		ArrayList <ArrayList <Value>> tupleList;
 		Table table;
-		/*
-		 * get table from tableFile
-		 */
 		
+		///////////////////////////////////
+		// get table from tableFile
+		///////////////////////////////////
 		File tableFile = new File(databaseDefUrl);
 		if (tableFile.exists()) {
 			tables = this.getTableDef();
@@ -152,12 +151,15 @@ public class DBExecutor{
 			throw new Error("INSERT: No database defined");
 		}
 		
-		// do the hash
+		///////////////////////////////////
+		// Insert into tables
+		// 	 using hash structure
+		///////////////////////////////////
 		if ((table = tables.get(query.getTableName()))!= null ) { 
-			// table exist 
-			// check values integrity and input in valueList
-			valueList = this.convertInsertValueType(table, query.getValueList());
+			// check values integrity and input in tuple
+			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
 			
+			// get tuple list by table name
 			File tupleFile = new File(query.getTableName() + ".db");
 			if (tupleFile.exists()) {
 				tupleList = this.getTupleList(tupleFile);
@@ -166,11 +168,13 @@ public class DBExecutor{
 				tupleList = new ArrayList <ArrayList <Value>> ();
 			}
 			
-			if (tupleList != null && valueList != null) {
-				boolean primarykeysNotRepeat = this.checkPrimarys(table.getPrimaryList(), tupleList, valueList);
-
+			// check primary key null or repeated
+			if (tupleList != null && tuple != null) {
+				
+				
+				boolean primarykeysNotRepeat = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
 				if (primarykeysNotRepeat) {
-					tupleList.add(valueList);
+					tupleList.add(tuple);
 				}else{
 					throw new Error ("INSERT: primary key is repeated or null\n");
 				}
@@ -553,6 +557,8 @@ public class DBExecutor{
 	}
 	
 	/**
+	 * Convert values from string to respect data type<br>
+	 * <br>
 	 * Check insert value list's columns numbers whether the same as tables<br>
 	 * convert strings in values to different types of object in valueList<br>
 	 * based on  attribute list <br>
@@ -561,17 +567,15 @@ public class DBExecutor{
 	 * @param values : valueList from the query
 
 	 */
-	private ArrayList <Value> convertInsertValueType(Table tableDef, ArrayList <String> values) throws Error
+	private ArrayList <Value> convertInsertValueType(Table table, ArrayList <String> values) throws Error
 	{
 		  ArrayList <Value> valueList = new ArrayList <Value> ();
-		  ArrayList <Attribute> attrList = tableDef.getAttrList();
-		  String tableName = tableDef.getTableName();
+		  ArrayList <Attribute> attrList = table.getAttrList();
+		  String tableName = table.getTableName();
 		  int attrSize = attrList.size();
 		  
-		  //DBMS.outConsole("size: "+Integer.toString(attrList.size())+" "+Integer.toString(tableDef.getAttrList().size()));
-		  
-		  // check column amount with query value
-		  if (attrSize != tableDef.getAttrList().size()) {
+		  // check table's column amount with query's value amount
+		  if (attrSize != table.getAttrList().size()) {
 		  		throw new Error("INSERT: The number of Values is not matched, Table: "
 		  				+ tableName + " has " +attrSize + " Values");
 		  }
@@ -585,17 +589,12 @@ public class DBExecutor{
 		  		Attribute.Type type = attribute.getType();
 		  		
 		  		if (type == Attribute.Type.INT) {
-		  			int intValue = Integer.parseInt(strValue);
-		  			Value value = new Value(intValue);
+		  			Value value = new Value( Integer.parseInt(strValue) );
 		  			valueList.add(value);
 		  		}
-		  		/*
-		  		 * need to check if varchar type string length exceed the create scheme defined
-		  		 */
 		  		else if(type == Attribute.Type.CHAR){
 		  			//check type and length 
 		  			if (attribute.getLength() < strValue.length()) {
-		  				DBMS.outConsole("Missmatch length: "+attribute.getLength()+" "+strValue.length());
 		  				throw new Error("INSERT: Value " + strValue + "length: "+attribute.getLength()+"<->"+strValue.length()+" mismatch");
 		  			}
 		  			Value charValue = new Value(strValue);
@@ -603,12 +602,11 @@ public class DBExecutor{
 		  		}
 		  	}
 		  	catch(NumberFormatException ex){
-		  		throw new Error("INSERT: Value " + strValue + "is wrong type or exceed length");
+		  		throw new Error("INSERT: Value " + strValue + " is wrong type or exceed length\n");
 		  	}
 
 		  }
 		  return valueList;
-
 	}
 	
 	/**
