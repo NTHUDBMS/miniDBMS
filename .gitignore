@@ -13,3 +13,9 @@
 hs_err_pid*
 /bin/
 /.settings/
+
+*.class
+*.classpath
+*.dat
+*.db
+Output.txt
