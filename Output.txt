@@ -1,7 +1,7 @@
 CREATE TABLE  (Student
 	 INT PRIMARYstudentId KEY,
-	 VARCHARname()15,
-	 VARCHARgender()1,
+	 VARCHARname(),
+	 VARCHARgender(),
 	 INTage
 );
 
@@ -11,33 +11,33 @@ CREATE TABLE  (Vehicle
 	 VARCHAR(),
 	 VARCHAR(),
 	 INT
-)licenseNumber10brand15model15type2engineSize;
+)licenseNumberbrandmodeltypeengineSize;
 
 CREATE TABLE  (Book
-	 VARCHAR() PRIMARYisbn20 KEY,
-	 VARCHARtitle()20,
-	 VARCHARauthor()20,
+	 VARCHAR() PRIMARYisbn KEY,
+	 VARCHARtitle(),
+	 VARCHARauthor(),
 	 INTpages,
-	 VARCHAReditorial()15
+	 VARCHAReditorial()
 );
 
 INSERT INTO 
-VALUESStudent (,10 ,'John Smith', 'M' )22;
+VALUESStudent (,10 ,'John Smith' ,'M' )22;
 
 INSERT INTO 
-VALUESStudent (,11 ,'Hsu You-Ting', 'F' )23;
+VALUESStudent (,11 ,'Hsu You-Ting' ,'F' )23;
 
 INSERT INTO  (Student,name ,age ,studentId )gender
-VALUES ()'Ai Toshiko', 21, 12, 'F';
+VALUES (,'Ai Toshiko' ,21 ,12 )'F';
 
 INSERT INTO  (Student,age ,studentId ,gender )name
-VALUES (,20 ,13 )'M', 'Fernando Sierra';
+VALUES (,20 ,13 ,'M' )'Fernando Sierra';
 
 INSERT INTO 
-VALUESStudent (,14 ,'Mohammed Ali', 'M' )25;
+VALUESStudent (,14 ,'Mohammed Ali' ,'M' )25;
 
 INSERT INTO  (Vehicle,licenseNumber ,brand ,model ,engineSize )type
-VALUES ()'abcdefghijklmnop', 'Nissan', 'Sentra', 1500, 'Sedan';
+VALUES (,'abcdefghijklmnop' ,'Nissan' ,'Sentra' ,1500 )'Sedan';
 
 INSERT INTO  (Vehicle,licenseNumber ,brand ,model ,engineSize )type
-VALUES ()'abcdefghijklmnop', 'Nissan', 'Sentra', 1500, 'Sedan';
+VALUES (,'abcdefghijklmnop' ,'Nissan' ,'Sentra' ,1500 )'Sedan';

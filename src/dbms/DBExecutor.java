@@ -570,44 +570,44 @@ public class DBExecutor{
 	 */
 	private ArrayList <Value> convertInsertValueType(Table table, ArrayList <String> values) throws Error
 	{
-		ArrayList <Value> valueList = new ArrayList <Value> ();
-		ArrayList <Attribute> attrList = table.getAttrList();
-		String tableName = table.getTableName();
-		int attrSize = attrList.size();
+		  ArrayList <Value> valueList = new ArrayList <Value> ();
+		  ArrayList <Attribute> attrList = table.getAttrList();
+		  String tableName = table.getTableName();
+		  int attrSize = attrList.size();
 		  
-		// check table's column amount with query's value amount
-		if (attrSize != table.getAttrList().size()) {
-				throw new Error("INSERT: The number of Values is not matched, Table: "
-						+ tableName + " has " +attrSize + " Values");
-		}
-		
-		//iterate attribute list, convert values and input valueList
-		for (int i = 0; i < attrSize; ++i) {
-			Attribute attribute = attrList.get(i);	//
-			String strValue = values.get(i);
-			
-			try{
-				Attribute.Type type = attribute.getType();
-				if(strValue==null){
-					valueList.add(new Value());
-				}else if (type == Attribute.Type.INT) {
-					Value value = new Value( Integer.parseInt(strValue) );
-					valueList.add(value);
-				}
-				else if(type == Attribute.Type.CHAR){
-					//check type and length 
-					if (attribute.getLength() < strValue.length()) {
-						throw new Error("INSERT: Value " + strValue + "length: "+attribute.getLength()+"<->"+strValue.length()+" mismatch");
-					}
-					Value charValue = new Value(strValue);
-					valueList.add(charValue);
-				}
-			}catch(NumberFormatException ex){
-				throw new Error("INSERT: Value " + strValue + " is wrong type or exceed length\n");
-			}
+		  // check table's column amount with query's value amount
+		  if (attrSize != table.getAttrList().size()) {
+		  		throw new Error("INSERT: The number of Values is not matched, Table: "
+		  				+ tableName + " has " +attrSize + " Values");
+		  }
 
-		}
-		return valueList;
+		  //iterate attribute list, convert values and input valueList
+		  for (int i = 0; i < attrSize; ++i) {
+		  	Attribute attribute = attrList.get(i);	//
+		  	String strValue = values.get(i);
+
+		  	try{
+		  		Attribute.Type type = attribute.getType();
+		  		
+		  		if (type == Attribute.Type.INT) {
+		  			Value value = new Value( Integer.parseInt(strValue) );
+		  			valueList.add(value);
+		  		}
+		  		else if(type == Attribute.Type.CHAR){
+		  			//check type and length 
+		  			if (attribute.getLength() < strValue.length()) {
+		  				throw new Error("INSERT: Value " + strValue + "length: "+attribute.getLength()+"<->"+strValue.length()+" mismatch");
+		  			}
+		  			Value charValue = new Value(strValue);
+		  			valueList.add(charValue);
+		  		}
+		  	}
+		  	catch(NumberFormatException ex){
+		  		throw new Error("INSERT: Value " + strValue + " is wrong type or exceed length\n");
+		  	}
+
+		  }
+		  return valueList;
 	}
 	
 	/**

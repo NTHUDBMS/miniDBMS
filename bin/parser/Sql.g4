@@ -24,6 +24,10 @@ import dbms.*;
 	private final static DBExecutor executor = new DBExecutor();
 	private boolean inValid;
 	
+	/**
+	 * Execute single SQL command. Won't execute if null
+	 * @param query : the SQL command
+	 */
 	public static void execute(Query query){
 		try{
     		if (query != null) {
@@ -57,7 +61,7 @@ instructions
 	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
 	|	select_from  
-	|	insert_into	{DBMS.outConsole("------");}
+	|	insert_into	{execute($insert_into.query);}
 	;
 
 create_table returns[Query query] 
@@ -66,24 +70,29 @@ create_table returns[Query query]
 		String attrName,
 		int lengthToken
 	]
-	
 	:	CREATE TABLE table_name { 
 			$tableName = $table_name.value;
 			DBMS.outConsole("create "+$tableName);
 		} 
-		LPARSE attribute_list RPARSE 
-		{
+		LPARSE attribute_list RPARSE {
 			//DBMS.outConsole("query: create_table start");
 			if(!inValid){
-				
 				$query = new Create(
 						$tableName, 
 						$attribute_list.r_attrList, 
 						$attribute_list.r_primaryList, 
 						$attribute_list.r_attrPosTable
 				);
+				/* DEBUG
+				Hashtable <String, Integer> tempP = $attribute_list.r_attrPosTable;
+				ArrayList <Attribute> temp = $attribute_list.r_attrList;
+				for(Attribute s : temp){
+					DBMS.outConsole("pos: "+s.getName()+"\t->"+tempP.get(s.getName()).toString());
+				}	
+				 */
 			}
 		}
+		
 	;
 
 
@@ -135,7 +144,7 @@ attribute
 				// save position of attribute with ArrayList<String, Integer> 
 				$attribute_list::attrPosTable.put(
 					_attrName, 
-					Integer.valueOf($attribute_list::attrList.size())
+					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
@@ -175,7 +184,7 @@ primary_key
 			{
 				$attribute_list::attrPosTable.put(
 					_attrName,
-					Integer.valueOf($attribute_list::attrList.size())
+					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
@@ -191,6 +200,8 @@ primary_key
 		
 		// deal with primary key
 		Integer position = $attribute_list::attrPosTable.get(_attrName);
+		//DBMS.outConsole("PKey position: "+Integer.toString(position));
+		
 		if (!$attribute_list::primaryList.contains(position)) {
 			//save position of attribute in primary list
 			$attribute_list::primaryList.add(position);
@@ -226,24 +237,43 @@ length returns [int lengthToken]
 
 insert_into returns [Query query]
 	locals[
-		Table table
+		Table table,
 	]
 	@init {
 		 //iterator for List <int> attrPosition 
 		int i = 0;
 		int tempPosition;
-		
+		ArrayList <String> valueList = new ArrayList <String>();
+		String tableName = "";
+	}
+	@after{
+		if(!inValid){
+			// check primary key not null
+			ArrayList<Integer> pList = $table.getPrimaryList();
+			boolean legal = true;
+			for(i=0; i<pList.size(); i++){
+				//DBMS.outConsole("PrimaryKey: "+Integer.toString(pList.get(i))+"-"+valueList.get(pList.get(i)));
+				if(valueList.get(pList.get(i))==null){
+					legal = false;
+					DBMS.outConsole("PrimaryKey null: "+Integer.toString(i)+"-"+valueList.get(pList.get(i)));
+					break;
+				}
+			}
+			// create query
+			if(legal){
+				$query = new Insert(
+					tableName,
+					valueList
+				);
+				DBMS.outConsole("Insert Into "+tableName);
+				DBMS.outConsole("Value:");
+				for(int j=0; j<valueList.size(); j++){
+					DBMS.outConsole(Integer.toString(j)+": "+valueList.get(j));
+				}	
+			}
+		}
 	}
 	:	INSERT INTO // insert without column declare
-		{
-			//DBMS.outConsole("Insert without column declare");
-			String tableName;
-			/*
-			* input all elements in string no need to convert type
-			* will convert type in DBExecutor
-			*/
-			ArrayList <String> valueList = new ArrayList <String>();
-		}
 		table_name {
 			tableName = $table_name.value;
 			
@@ -251,76 +281,54 @@ insert_into returns [Query query]
 			try{
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
+			
 			if($table==null){
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
 			}
 		}
-		VALUES LPARSE consts {
-			valueList.add($consts.value);
-		} 
-		(COMMA consts {
-			valueList.add($consts.value);
-		})* RPARSE
-		{
-			$query = new Insert(
-				tableName,
-				valueList
-			);
-			DBMS.outConsole("insert into "+tableName);
-		}
+		VALUES LPARSE consts {	valueList.add($consts.value);} 
+		(COMMA consts {	valueList.add($consts.value);})* RPARSE
 		
-	|	INSERT INTO // insert with column declaration
-		{
-		/*
-		 * Insert into specific column, use List<Integer> attrPostion to track column index
-		 * these has to change to colomn type storing 
-		 * we don't know colomn position in the parsing phase
-		 * all we can do is to add element in each colomn list
-		 */
-			String tableName;
-			ArrayList <String> valueList = new ArrayList <String>();
-		}
-		table_name {
+	|	INSERT INTO table_name { // insert with column declare
 			tableName = $table_name.value;
 			
 			// fetch table form hash
 			try{
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
+			
+			// check table exist, and initialize valueList to collect values
 			if($table==null){
 				inValid = true;
 				DBMS.outConsole("INSERT: NO SUCH TABLE");
+			}else{
+				// initialize list with size space
+				for(int K=0; K < $table.getAttrList().size(); K++){
+					valueList.add(K,"");
+				}
+				//DBMS.outConsole(Integer.toString(valueList.size()));
 			}
 		} 
-		colomn_declare{
-			tempPosition = $colomn_declare.attrPosition.remove(i++);
-		} 
-		VALUES LPARSE consts 
-		{	
-			if( tempPosition <= valueList.size()){
-				valueList.add(tempPosition,$consts.value); 
-				//add at specific index, after that index(include)
-				// would shift
-			}
-			else {
-				valueList.add($consts.value);//just add at end
+		colomn_declare VALUES LPARSE consts 
+		{
+			if(!inValid){
+				// pop attribute position
+				tempPosition = $colomn_declare.attrPosition.get(i++);
+				
+				// set by position
+				valueList.set(tempPosition, $consts.value); 
 			}
 		}
 		(COMMA consts {
-			valueList.add($consts.value); 
-			if( tempPosition <= valueList.size())
-				valueList.add(tempPosition,$consts.value); 
-			else valueList.add($consts.value);
-
+			if(!inValid){
+				// pop attribute position
+				tempPosition = $colomn_declare.attrPosition.get(i++);
+				
+				// set by position
+				valueList.set(tempPosition, $consts.value); 
+			} 
 		} )* RPARSE
-		{
-			$query = new Insert(
-				tableName,
-				valueList
-			);
-			DBMS.outConsole("insert into "+tableName);
-		}
 	;
 
 
@@ -338,23 +346,32 @@ colomn_declare returns[
 		}else {
 			DBMS.outConsole("insert_into::table null");
 		}
-
-	}
-	@after{
 		
 	}
 	:	LPARSE colomn_name {
 			if(attrPosTable!=null){
-				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(i); 
-				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+				int i;
+				if(attrPosTable.containsKey($colomn_name.value)){
+					i = attrPosTable.get($colomn_name.value);
+					$attrPosition.add(i); 
+					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
+				}else{
+					inValid = true;
+					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+				}
 			}
 		}
 	 	(COMMA  colomn_name {
 	 		if(attrPosTable!=null){
-				int i = attrPosTable.get($colomn_name.value);
-				$attrPosition.add(i); 
-				DBMS.outConsole("fetch target column: "+$colomn_name.value+" # "+i);
+				int i;
+				if(attrPosTable.containsKey($colomn_name.value)){
+					i = attrPosTable.get($colomn_name.value);
+					$attrPosition.add(i); 
+					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
+				}else{
+					inValid = true;
+					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+				}
 			}
 	 	})* RPARSE
 	;
@@ -395,12 +412,13 @@ operand
 	|	consts
 	;
 
-/**
-changed it from object to string Shawn
-*/
 consts returns [String value]
 	:	x = type_int {$value = $x.value; }
 	|	z = type_varchar {$value = $z.value;}
+	|	{
+		// null value
+		
+	}
 	;
 
 compare
@@ -453,8 +471,10 @@ type_int returns [String value]
   
 type_varchar returns [String value] 
 	:	x=VARCHAR_IDENTI {
-		$value = new String($x.text);
-		DBMS.dump($x.text);
+		String temp = new String($x.text);
+		String[] split = temp.split("\'");
+		$value = split[1];
+		DBMS.dump($value);
 	};
 
 ALTER   : A L T E R;
@@ -506,7 +526,7 @@ DOUBLE_IDENTI
     |	((DIGIT)*'.'DIGIT);
     
 VARCHAR_IDENTI
-    : ('\'')~[\r\n]*('\'');
+    : ('\'')~[\r\n'\'']*('\'');
 
 SINGLE_LINE_COMMENT
 	: '--' ~[\r\n]* -> channel(HIDDEN);
@@ -551,6 +571,7 @@ fragment X : [xX];
 fragment Y : [yY];
 fragment Z : [zZ];
 
+APOS   : '\'' ;
 SCOL   : ';' {DBMS.dump(";");};
 DOT    : '.' {DBMS.dump(".");};
 LPARSE : '(' {DBMS.dump("(");};
