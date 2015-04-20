@@ -78,6 +78,14 @@ public class Create extends Query{
 	}
 	
 	/**
+	 * 
+	 * @return attribute position table
+	 */
+	public Hashtable <String, Integer> getAttrPosTalbe(){
+		return this.attrPosTable;
+	}
+	
+	/**
 	 * new a table
 	 * @return table
 	 */

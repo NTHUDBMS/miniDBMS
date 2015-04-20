@@ -24,6 +24,10 @@ import dbms.*;
 	private final static DBExecutor executor = new DBExecutor();
 	private boolean inValid;
 	
+	/**
+	 * Execute single SQL command. Won't execute if null
+	 * @param query : the SQL command
+	 */
 	public static void execute(Query query){
 		try{
     		if (query != null) {
@@ -79,6 +83,13 @@ create_table returns[Query query]
 						$attribute_list.r_primaryList, 
 						$attribute_list.r_attrPosTable
 				);
+				/* DEBUG
+				Hashtable <String, Integer> tempP = $attribute_list.r_attrPosTable;
+				ArrayList <Attribute> temp = $attribute_list.r_attrList;
+				for(Attribute s : temp){
+					DBMS.outConsole("pos: "+s.getName()+"\t->"+tempP.get(s.getName()).toString());
+				}	
+				 */
 			}
 		}
 		
@@ -133,7 +144,7 @@ attribute
 				// save position of attribute with ArrayList<String, Integer> 
 				$attribute_list::attrPosTable.put(
 					_attrName, 
-					Integer.valueOf($attribute_list::attrList.size())
+					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
@@ -173,7 +184,7 @@ primary_key
 			{
 				$attribute_list::attrPosTable.put(
 					_attrName,
-					Integer.valueOf($attribute_list::attrList.size())
+					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
 				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
@@ -189,6 +200,8 @@ primary_key
 		
 		// deal with primary key
 		Integer position = $attribute_list::attrPosTable.get(_attrName);
+		//DBMS.outConsole("PKey position: "+Integer.toString(position));
+		
 		if (!$attribute_list::primaryList.contains(position)) {
 			//save position of attribute in primary list
 			$attribute_list::primaryList.add(position);
@@ -235,14 +248,28 @@ insert_into returns [Query query]
 	}
 	@after{
 		if(!inValid){
-			$query = new Insert(
-				tableName,
-				valueList
-			);
-			DBMS.outConsole("Insert Into "+tableName);
-			DBMS.outConsole("Value:");
-			for(int j=0; j<valueList.size(); j++){
-				DBMS.outConsole(Integer.toString(j)+": "+valueList.get(j));
+			// check primary key not null
+			ArrayList<Integer> pList = $table.getPrimaryList();
+			boolean legal = true;
+			for(i=0; i<pList.size(); i++){
+				DBMS.outConsole("PrimaryKey: "+Integer.toString(pList.get(i))+"-"+valueList.get(pList.get(i)));
+				if(valueList.get(pList.get(i))==null){
+					legal = false;
+					DBMS.outConsole("PrimaryKey null: "+Integer.toString(i)+"-"+valueList.get(pList.get(i)));
+					break;
+				}
+			}
+			// create query
+			if(legal){
+				$query = new Insert(
+					tableName,
+					valueList
+				);
+				DBMS.outConsole("Insert Into "+tableName);
+				DBMS.outConsole("Value:");
+				for(int j=0; j<valueList.size(); j++){
+					DBMS.outConsole(Integer.toString(j)+": "+valueList.get(j));
+				}	
 			}
 		}
 	}
@@ -287,7 +314,7 @@ insert_into returns [Query query]
 		{
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++)-1;
+				tempPosition = $colomn_declare.attrPosition.get(i++);
 				
 				// set by position
 				valueList.set(tempPosition, $consts.value); 
@@ -296,7 +323,7 @@ insert_into returns [Query query]
 		(COMMA consts {
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++)-1;
+				tempPosition = $colomn_declare.attrPosition.get(i++);
 				
 				// set by position
 				valueList.set(tempPosition, $consts.value); 
