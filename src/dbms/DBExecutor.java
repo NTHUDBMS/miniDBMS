@@ -583,7 +583,6 @@ public class DBExecutor{
 
 		  	try{
 		  		Attribute.Type type = attribute.getType();
-
 		  		
 		  		if (type == Attribute.Type.INT) {
 		  			int intValue = Integer.parseInt(strValue);
@@ -595,7 +594,7 @@ public class DBExecutor{
 		  		 */
 		  		else if(type == Attribute.Type.CHAR){
 		  			//check type and length  //' ' +length of string
-		  			if (attribute.getLength() +2 < strValue.length()|| strValue.charAt(0)!= '\'') {
+		  			if (attribute.getLength() < strValue.length()) {
 		  				throw new NumberFormatException();
 		  			}
 		  			Value charValue = new Value(strValue);
