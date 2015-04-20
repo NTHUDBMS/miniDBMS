@@ -125,7 +125,7 @@ public class DBExecutor{
 	 * The operation to perform SQL: INSERT.<br>
 	 * get tuple list from file
 	 * convert new tuple in string to new tuple in types
-	 * check primary whether is repeated
+	 * check primary whether is notRepeat
 	 * if not store new added tuple list to type file
 	 * 
 	 * @param query : The object contains the informations to be inserted.
@@ -168,7 +168,7 @@ public class DBExecutor{
 				tupleList = new ArrayList <ArrayList <Value>> ();
 			}
 			
-			// check primary key null or repeated
+			// check primary key null or notRepeat
 			if (tupleList != null && tuple != null) {
 				
 				
@@ -176,7 +176,7 @@ public class DBExecutor{
 				if (primarykeysNotRepeat) {
 					tupleList.add(tuple);
 				}else{
-					throw new Error ("INSERT: primary key is repeated or null\n");
+					throw new Error ("INSERT: primary key is notRepeat or null\n");
 				}
 			}
 			
@@ -528,9 +528,9 @@ public class DBExecutor{
 	 *  Check primary key value repeat, using equals()
 	 * @param primaryList : primary attribute position table
 	 * @param tupleList : tuple list of a table
-	 * @param tuple : the tuple(valueList) to check if primary repeated in old
+	 * @param tuple : the tuple(valueList) to check if primary notRepeat in old
 	 * @return 
-	 *  true if not repeated, false if repeated
+	 *  true if not not Repeat, false if notRepeat
 	 * @see Value
 	 */
 	private boolean checkPrimarys(
@@ -538,21 +538,22 @@ public class DBExecutor{
 			ArrayList <ArrayList <Value>> tupleList, 
 			ArrayList <Value> tuple)
 	{
-		boolean isCorrect = true;
+		boolean notRepeat = false;
 		
 		//check every tuple
 		LABEL_OUTTER:
 		for (ArrayList <Value> tupleIterator: tupleList ) {
-			// in each tuple check primary key in new valueList whether is repeated  
+			// in each tuple check primary key in new valueList whether is notRepeat  
 			for (Integer primaryPosition : primaryList) {
 				// true if equals
 				if (tuple.get(primaryPosition).equals(tupleIterator.get(primaryPosition))) {
-					isCorrect = false;
+					notRepeat = true;
+					
 					break LABEL_OUTTER;
 				}
 			}
 		}
-		return isCorrect;
+		return notRepeat;
 
 	}
 	
