@@ -1,11 +1,16 @@
 package dbms;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 
-import java.io.*;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
 
-import parser.*;
+import parser.SqlLexer;
+import parser.SqlParser;
 
 /**
  * CS4710 Introducing to Database, Team 6<br>

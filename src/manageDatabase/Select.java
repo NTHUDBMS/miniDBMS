@@ -13,12 +13,15 @@ public class Select extends Query{
 	/**
 	 * Columns to be select
 	 */
-	private ArrayList<String> attrList;
+	private ArrayList<String> attrList;//for first table
+	private ArrayList<String> attrList2;//for second table
 	
 	/**
 	 * target table to search
+	 * tableNames[0] first
+	 * tableNames[1] second
 	 */
-	private ArrayList<String> tableNames;
+	private ArrayList<String> tableNames; 
 	
 	/**
 	 * Conditions specified with "WHERE" command
@@ -26,7 +29,7 @@ public class Select extends Query{
 	private Condition cond;
 	
 	/**
-	 * 
+	 *  SELECT * 
 	 */
 	private boolean selectAll;
 	
@@ -39,10 +42,13 @@ public class Select extends Query{
 	/**
 	 * Constructor with select conditions
 	 */
-	public Select(ArrayList<String> attrList, ArrayList<String> tableNames, Condition cond){
+	public Select(ArrayList<String> attrList,ArrayList<String >attrList2,
+			ArrayList<String> tableNames, Condition cond)
+	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
+		this.attrList2 = attrList2;
 		this.cond = cond;
 	}
 
@@ -72,7 +78,13 @@ public class Select extends Query{
 	public ArrayList<String> getAttrStrList(){
 		return this.attrList;
 	}
-
+	/**
+	 * getter of columns to be selected
+	 */
+	public ArrayList<String> getAttrStrList2(){
+		return this.attrList2;
+	}
+	
 	
 	/**
 	 * getter of select conditions
@@ -90,8 +102,11 @@ public class Select extends Query{
 	}
 
 	
+	
+	
+	
 	/**
-	 * 
+	 * ??????????????? 
 	 */
 	public void setNormalUser(){
 		this.isNormalUser = true;
@@ -99,7 +114,7 @@ public class Select extends Query{
 
 	
 	/**
-	 * 
+	 * ???????????????
 	 */
 	public boolean isNormalUser(){
 		return this.isNormalUser;

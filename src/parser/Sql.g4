@@ -99,13 +99,13 @@ create_table returns[Query query]
 attribute_list returns[
 		ArrayList <Attribute> r_attrList,
 		Hashtable <String, Integer> r_attrPosTable,
-		ArrayList <Integer> r_primaryList
+		ArrayList <Integer> r_primaryList 
 	]
 	locals[
 		Attribute _attribute,
-		ArrayList <Attribute> attrList, //
+		ArrayList <Attribute> attrList, 
 		Hashtable <String, Integer> attrPosTable, // attribute position 
-		ArrayList <Integer> primaryList //
+		ArrayList <Integer> primaryList 
 	]
 	@init{
 		$attrList = new ArrayList <Attribute>();
@@ -376,10 +376,33 @@ colomn_declare returns[
 	 	})* RPARSE
 	;
 
-select_from
+select_from returns [Query query]
+locals[
+	ArrayList<String> attrNameList,
+	Condition cond,
+	ArrayList<String> tableList //we just have two table to compare
+]
+@init{
+	cond = null;
+}
+@after{
+		if(!inValid){
+			$query = new Select();
+				
+		}
+		
+}
 	:	SELECT colomns (COMMA colomns)* 
 		FROM tables (COMMA tables)*
 		where_clause?
+		|
+		SELECT COUNT LPARSE colomn_tail RPARSE
+		FROM table_name
+		where_clause?
+		|
+		SELECT SUM LPARSE colomn_tail RPARSE
+		FROM table_name
+		where_clause? 
 	;
 
 colomns
@@ -395,21 +418,66 @@ tables
 	:	table_name (AS table_alias_name)?
 	;
 	
-where_clause
-	:	WHERE bool_expr (logical_op bool_expr)?
+where_clause returns [Condition cond]
+ locals[
+ 	Condition cond,
+ 	Exp left,
+ 	Exp right
+ ]
+ @init{
+ 	$left = null;
+ 	$right = null;
+ }
+ @after{
+ 	$cond = new Condition(left);
+ }
+	:	WHERE bool_expr{$left = $bool_expr.exp;} (logical_op bool_expr {$right = $bool_expr.exp;})? 
+		{
+			//only 1 bool_expr
+			if($right != null)
+				$left =  new BinaryExp($left, $logical_op.text,$right);
+		}
+		
 	;
 	
 logical_op returns [String value]
 	:	x=(AND|OR) {$value = new String($x.text);}
 	;
 
-bool_expr
-	:	operand (compare operand)?
+/**
+ * take out ()? from (compare operand )?
+ * we don't know the value type is string or integer yet
+ */
+bool_expr returns [Exp exp]
+	locals[
+		Exp leftExp,
+		Exp rightExp
+	]
+	@after {
+		$exp = $leftExp;
+	}
+	:	operand compare operand
+	{	
+		$leftExp = $operand.exp;
+		$rightExp = $operand.exp;
+		$leftExp = new BinaryExp($leftExp, $compare.text, $rightExp);
+	}
     ;
     
-operand
-	:	(table_alias_name DOT)? colomn_name
-	|	consts
+operand returns [Exp exp]
+	locals[String tableAlias, String colomnName]
+	@after{	
+	}
+	:	(table_alias_name DOT)? colomn_name{
+		$tableAlias = $table_alias_name.value;
+		$colomnName = $colomn_name.value;
+		if($tableAlias != null)
+			$exp = new ColExp($tableAlias, $colomnName); //should use real tableName
+		else
+		$exp = new colExp($colomnName);
+	}
+	|	type_int {$exp = new IntExp(Integer.parseInt($type_int.value));}
+	|  type_varchar{$exp = new StrExp($type_varchar.value);}
 	;
 
 consts returns [String value]
@@ -460,9 +528,7 @@ table_alias_name returns [String value]
 		DBMS.dump($x.text);
 	};
   
- /**
- I changed it from Integer to String 
- */
+
 type_int returns [String value]  
 	:	x=INT_IDENTI {
 		$value = new String($x.text);
@@ -479,12 +545,8 @@ type_varchar returns [String value]
 
 ALTER   : A L T E R;
 AS      : A S              { DBMS.dump("AS");};
-CREATE  : C R E A T E      { 
-	DBMS.dump("CREATE");
-	
-
-
-};
+CREATE  : C R E A T E      { DBMS.dump("CREATE");};
+COUNT   : C O U N T		 	 { DBMS.dump("COUNT");};  
 DATABASE: D A T A B A S E;
 DELETE  : D E L E T E;
 DOUBLE  : D O U B L E;
@@ -505,6 +567,7 @@ PRIMARY : P R I M A R Y    { DBMS.dump("PRIMARY");};
 REFERENCES: R E F E R E N C E S;
 SELECT  : S E L E C T      { DBMS.dump("SELECT");};
 SET     : S E T;
+SUM		:	S U M				  {DBMS.dump("SUM");};		  
 VARCHAR : V A R C H A R    { DBMS.dump("VARCHAR");};
 TABLE   : T A B L E        { DBMS.dump("TABLE");};
 UPDATE  : U P D A T E;
