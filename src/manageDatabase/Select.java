@@ -22,7 +22,6 @@ public class Select extends Query{
 	 * tableNames[1] second
 	 */
 	private ArrayList<String> tableNames; 
-	
 	/**
 	 * Conditions specified with "WHERE" command
 	 */
@@ -32,12 +31,13 @@ public class Select extends Query{
 	 *  SELECT * 
 	 */
 	private boolean selectAll;
-	
 	/**
 	 * 
 	 */
 	private boolean isNormalUser = false;
 
+	private int aggregateMode= 0; 
+	/* mode 1 is  Count,  2 is Sum*/
 	
 	/**
 	 * Constructor with select conditions
@@ -63,7 +63,15 @@ public class Select extends Query{
 		this.selectAll = true;
 	}
 
-	
+	public Select(ArrayList<String> attrList, ArrayList<String> tableNames,
+			 Condition cond, int aggregateMode){
+				this.queryName = "SELECT";
+				this.setAggregateMode(aggregateMode);
+				this.cond = cond;
+				this.tableNames = tableNames;
+				this.attrList = attrList;
+			}
+
 	/**
 	 * getter of tables to be selected
 	 */
@@ -118,6 +126,16 @@ public class Select extends Query{
 	 */
 	public boolean isNormalUser(){
 		return this.isNormalUser;
+	}
+
+
+	public int getAggregateMode() {
+		return aggregateMode;
+	}
+
+
+	public void setAggregateMode(int aggregateMode) {
+		this.aggregateMode = aggregateMode;
 	}
 
 }

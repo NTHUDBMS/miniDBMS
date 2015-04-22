@@ -60,8 +60,8 @@ start
 instructions
 	@init{ inValid = false;}
 	:	create_table {execute($create_table.query);}
-	|	select_from  
 	|	insert_into	{execute($insert_into.query);}
+	|	select_from  {execute($select_from.query);}
 	;
 
 create_table returns[Query query] 
@@ -378,49 +378,125 @@ colomn_declare returns[
 
 select_from returns [Query query]
 locals[
-	ArrayList<String> attrNameList,
+	Map<String, ArrayList<String>> tableNameToAttrList,
+	Map<String, String> AliasToReal,
+	ArrayList<String> attrNameList, //for first or not specify which
+	ArrayList<String> attrNameList2, //for second table
 	Condition cond,
 	ArrayList<String> tableList //we just have two table to compare
 ]
 @init{
-	cond = null;
+	$tableNameToAttrList = new HashMap<String, ArrayList<String>> ();
+	$AliasToReal = new HashMap<String, String> (); /*used to look up real table name */ 
+	$cond = null;
+	$attrNameList = new ArrayList<String> ();/*for first table */
+	$AliasToReal = new HashMap<>();
+	$tableList = new ArrayList<String> ();/*first table is tableList[0]  */ 
 }
 @after{
-		if(!inValid){
-			$query = new Select();
-				
-		}
 		
 }
-	:	SELECT colomns (COMMA colomns)* 
-		FROM tables (COMMA tables)*
+	:	//one table or two
+		SELECT colomns (COMMA colomns)*
+		/*if From parse first then we know table and table_alias first
+		 * then select columns would know which table attributes to put
+		 */ 
+		FROM tables (COMMA tables)* 
 		where_clause?
+		{
+			/**
+			 * if just one table attributes  store in first
+			 * if two table attributes could all store in first if no alias specify
+			 * but if alias specify then we store attributes in first or two based on tableName
+			 *  
+			 */
+			 
+			 /*this part is not finished*/
+		}
 		|
+		//only one table
 		SELECT COUNT LPARSE colomn_tail RPARSE
-		FROM table_name
-		where_clause?
+		{
+			if(!$colomn_tail.value.equals("*"))
+				$attrNameList.add($colomn_tail.value);
+		}
+		/*value could be 1 attribute or Star */
+		FROM tables
+		where_clause?{$cond = $where_clause.cond;}
+		{
+			if($colomn_tail.value.equals("*"))
+				$query = new AggregateSelect($tableList,$cond, true,0);
+			else/*list will only store one attribute*/
+				$query = new AggregateSelect($attrNameList,$tableList, $cond,0); 
+		}
 		|
+		//only one table
 		SELECT SUM LPARSE colomn_tail RPARSE
-		FROM table_name
-		where_clause? 
+		{$attrNameList.add($colomn_tail.value);}
+		FROM tables
+		where_clause? {$cond = $where_clause.cond;}
+		{
+			if($colomn_tail.value.equals("*"))
+				$query = new AggregateSelect($tableList,$cond, true,1);
+			else/*list will only store one attribute*/
+				$query = new AggregateSelect($attrNameList,$tableList, $cond,1); 
+		}
+		
 	;
+	
+	/**
+	 * store attributes based on table name 
+	 * if not specify which table store in the attrNameList
+	 */
+colomns 
+	locals[	
+				String tableName,
+				String tableAliasName, 
+				String colomnName
+			]
 
-colomns
     :	(table_name|table_alias_name DOT)? colomn_tail
+   		{
+   			$tableName = $table_name.value;
+   			$tableAliasName = $table_alias_name.value;
+   			$colomnName = $colomn_tail.value;
+   			if($tableName ==null && $tableAliasName == null)
+   			{
+   				$select_from::attrNameList.add($colomnName);
+   			}
+   			else if($tableName != null)
+   				($select_from::tableNameToAttrList.get($tableName.value)).add($colomnName);
+   			else /*did not in this demo */
+   				{
+   					String realName = $select_from::AliasToReal($tableAliasName);
+   					($select_from::tableNameToAttrList.get($tableName.value)).add(realName);
+   				}
+   		}
     ;
     
-colomn_tail returns [Object value]
+colomn_tail returns [String value]
 	:	x = colomn_name {$value = $x.value;}
 	|	y = STAR {$value = $y.text;}
 	;
 
 tables
 	:	table_name (AS table_alias_name)?
+	{
+		if($table_alias_name.value != null)
+			{
+				$select_from::AliasToReal.put($table_name.value,$table_alias_name.value);
+				$select_from::tableList.add($table_name.value);
+				if($select_from::tableNameToAttrList.size()==0)
+					$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList);
+				else if(!$select_from::tableNameToAttrList.containsKey($table_name.value)
+					&&$select_from::tableNameToAttrList.size()==0)
+					$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
+			}	
+	}
 	;
 	
 where_clause returns [Condition cond]
  locals[
- 	Condition cond,
  	Exp left,
  	Exp right
  ]

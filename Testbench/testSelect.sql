@@ -54,7 +54,8 @@ SELECT authorId 
 FROM Author, Book 
 WHERE Author.authorId = Book.authorId AND Book.title = 'Star Wars';
 
-SELECT * FROM Author
+SELECT * 
+FROM Author
  WHERE authorId = 'John';
 
 SELECT Book.*
