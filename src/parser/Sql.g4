@@ -379,6 +379,16 @@ colomn_declare returns[
 select_from returns [Query query]
 locals[
 	Map<String, ArrayList<String>> tableNameToAttrList,
+	
+	/**
+	AliasToReal used to transform Alias Table name to real table name
+	Select S.studentId  S is the Alias 
+	but S defines at From clause 
+	how can we infer the real name before we parse to From clause?
+	also Where clause will call it again
+	and how to call this table
+	*/
+
 	Map<String, String> AliasToReal,
 	ArrayList<String> attrNameList, //for first or not specify which
 	ArrayList<String> attrNameList2, //for second table
@@ -390,8 +400,8 @@ locals[
 	$AliasToReal = new HashMap<String, String> (); /*used to look up real table name */ 
 	$cond = null;
 	$attrNameList = new ArrayList<String> ();/*for first table */
-	$AliasToReal = new HashMap<>();
 	$tableList = new ArrayList<String> ();/*first table is tableList[0]  */ 
+	boolean selectAll = false;
 }
 @after{
 		
@@ -402,6 +412,12 @@ locals[
 		 * then select columns would know which table attributes to put
 		 */ 
 		FROM tables (COMMA tables)* 
+		{
+			/**
+			get real table name here and add select alias tableName 
+			*/
+		}
+
 		where_clause?
 		{
 			/**
@@ -410,6 +426,7 @@ locals[
 			 * but if alias specify then we store attributes in first or two based on tableName
 			 *  
 			 */
+			 $query = new Select($attrNameList, $attrNameList2, $tableList, $cond);
 			 
 			 /*this part is not finished*/
 		}
@@ -425,9 +442,9 @@ locals[
 		where_clause?{$cond = $where_clause.cond;}
 		{
 			if($colomn_tail.value.equals("*"))
-				$query = new AggregateSelect($tableList,$cond, true,0);
+				$query = new Select($tableList,$cond, true,0);
 			else/*list will only store one attribute*/
-				$query = new AggregateSelect($attrNameList,$tableList, $cond,0); 
+				$query = new Select($attrNameList,$tableList, $cond,0); 
 		}
 		|
 		//only one table
@@ -437,9 +454,9 @@ locals[
 		where_clause? {$cond = $where_clause.cond;}
 		{
 			if($colomn_tail.value.equals("*"))
-				$query = new AggregateSelect($tableList,$cond, true,1);
+				$query = new Select($tableList,$cond, true,1);
 			else/*list will only store one attribute*/
-				$query = new AggregateSelect($attrNameList,$tableList, $cond,1); 
+				$query = new Select($attrNameList,$tableList, $cond,1); 
 		}
 		
 	;
@@ -465,11 +482,11 @@ colomns
    				$select_from::attrNameList.add($colomnName);
    			}
    			else if($tableName != null)
-   				($select_from::tableNameToAttrList.get($tableName.value)).add($colomnName);
+   				($select_from::tableNameToAttrList.get($tableName)).add($colomnName);
    			else /*did not in this demo */
    				{
-   					String realName = $select_from::AliasToReal($tableAliasName);
-   					($select_from::tableNameToAttrList.get($tableName.value)).add(realName);
+   					String realName = $select_from::AliasToReal.get($tableAliasName);
+   					($select_from::tableNameToAttrList.get($realName)).add($colomn_name);
    				}
    		}
     ;
@@ -484,7 +501,7 @@ tables
 	{
 		if($table_alias_name.value != null)
 			{
-				$select_from::AliasToReal.put($table_name.value,$table_alias_name.value);
+				$select_from::$select_from::AliasToReal.put($table_name.value,$table_alias_name.value);
 				$select_from::tableList.add($table_name.value);
 				if($select_from::tableNameToAttrList.size()==0)
 					$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList);
@@ -505,7 +522,7 @@ where_clause returns [Condition cond]
  	$right = null;
  }
  @after{
- 	$cond = new Condition(left);
+ 	$cond = new Condition($left);
  }
 	:	WHERE bool_expr{$left = $bool_expr.exp;} (logical_op bool_expr {$right = $bool_expr.exp;})? 
 		{
@@ -542,18 +559,18 @@ bool_expr returns [Exp exp]
     
 operand returns [Exp exp]
 	locals[String tableAlias, String colomnName]
+
 	@after{	
 	}
 	:	(table_alias_name DOT)? colomn_name{
 		$tableAlias = $table_alias_name.value;
 		$colomnName = $colomn_name.value;
-		if($tableAlias != null)
-			$exp = new ColExp($tableAlias, $colomnName); //should use real tableName
+		if($tableAlias != null) /* alias will not used in this demo*/
+			$exp = new ColExp($select_from::AliasToReal.get($tableAlias), $colomnName); //should use real tableName
 		else
-		$exp = new colExp($colomnName);
+		$exp = new StrExp($colomnName);
 	}
 	|	type_int {$exp = new IntExp(Integer.parseInt($type_int.value));}
-	|  type_varchar{$exp = new StrExp($type_varchar.value);}
 	;
 
 consts returns [String value]

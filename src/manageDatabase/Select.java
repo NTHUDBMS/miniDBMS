@@ -41,9 +41,12 @@ public class Select extends Query{
 	
 	/**
 	 * Constructor with select conditions
+	 * 2 table 2 attrlist
+	 * 1 table 1 attrlist
+	 * with condition or not
 	 */
 	public Select(ArrayList<String> attrList,ArrayList<String >attrList2,
-			ArrayList<String> tableNames, Condition cond)
+			ArrayList<String> tableNames, Condition cond) 
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
@@ -55,8 +58,10 @@ public class Select extends Query{
 	
 	/**
 	 * Constructor with select "*" mark
+	 * print two tables all or one tables all
+	 * and with condition or not
 	 */
-	public Select(ArrayList<String> tableNames, Condition cond, boolean selectAll){
+	public Select(ArrayList<String> tableNames, Condition cond, boolean selectAll,int aggregateMode){
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.cond = cond;
