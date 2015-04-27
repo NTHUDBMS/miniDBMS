@@ -9,7 +9,7 @@ public class ColExp extends Exp{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private String tableName;
+	private String tableName; /*could be alias */
 	private String colomnName;
 
 	public ColExp(String tableName, String colomnName){
