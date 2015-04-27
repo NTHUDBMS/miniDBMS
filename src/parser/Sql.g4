@@ -13,7 +13,9 @@ import java.io.*;
 import manageDatabase.*;
 import structure.*;
 import dbms.*;
-import com.google.common.collect.ArrayListMultimap;    
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+  
 }
 
 @parser::members {
@@ -69,7 +71,8 @@ instructions @init { inValid = false;}
 	{execute($insert_into.query);}
 
 	| select_from
-	{execute($select_from.query);}
+	{//execute($select_from.query);
+	}
 
 ;
 
@@ -437,7 +440,7 @@ locals [
 	*/
 
 	Map<String, String> RealToAlias,/*used to look up real table name */
-	ArrayListMultimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
+	Multimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
 	ArrayList<String> attrNameList, //for first or not specify which
 	ArrayList<String> attrNameList2, //for second table
 	Condition cond,
@@ -445,7 +448,7 @@ locals [
 ] @init {
 	$tableNameToAttrList = new HashMap<String, ArrayList<String>> ();
 	$RealToAlias = new HashMap<String, String> ();  
-	$tableAndAttr = new ArrayListMultimap<String, String>();
+	$tableAndAttr = ArrayListMultimap.create();
 	$cond = null;
 	$attrNameList = new ArrayList<String> ();/*for first table */
 	$attrNameList2 = new ArrayList<String> ();/*for first table */
@@ -472,9 +475,9 @@ locals [
 		{
 			String tableName = $tableList.get(tableSize-1);
 			ArrayList <String > attrlist = $tableNameToAttrList.get(tableName);
-			String alias = $RealToAlias.get(tableName); 
-			attrlist.addAll($tableAndAttr.get(tableName)); //add collection 
-			attrlist.addAll($tableAndAttr.get(alias));
+			String alias = $RealToAlias.get(tableName);
+			attrlist.addAll($select_from::tableAndAttr.get(tableName)); //add collection 
+			attrlist.addAll($select_from::tableAndAttr.get(alias));
 			tableSize --;//for while condition
 		}
 
@@ -529,25 +532,33 @@ locals [
 	 if not specify which table store in the attrNameList*/
 colomns
 locals [	
-				String tableName,
-				String tableAliasName, 
-				String colomnName
-			]
+				//String tableName,
+				//String tableAliasName, 
+				//String colomnName
+		]
+		@init{
+		String tableName = null;
+		String tableAliasName = null; 
+		String colomnName; 
+		}
 :
 	(
 		table_name
 		| table_alias_name DOT
+		{
+			System.out.println(tableName+ tableAliasName);
+			tableName = $table_name.value;
+			tableAliasName = $table_alias_name.value;
+		}
 	)? colomn_tail
 	{
-   			$tableName = $table_name.value;
-   			$tableAliasName = $table_alias_name.value;
-   			$colomnName = $colomn_tail.value;
-   			if($tableName ==null && $tableAliasName == null)
-   			   	$select_from::attrNameList.add($colomnName); //attribute w/o table or alias Name
-   			else if($tableName != null)
-   				$select_from::tableAndAttr.put($tableName, $colomnName);
-   			else if($tableAliasName!= null)
-   				$select_from::tableAndAttr.put($tableAliasName, $colomnName);
+   			colomnName = $colomn_tail.value;
+   			if(tableName ==null && tableAliasName == null)
+   			   	$select_from::attrNameList.add(colomnName); //attribute w/o table or alias Name
+   			else if(tableName!=null)
+   				$select_from::tableAndAttr.put(tableName, colomnName);
+   			else if(tableAliasName!= null)
+   				$select_from::tableAndAttr.put(tableAliasName, colomnName);
 
    		}
 
@@ -565,21 +576,22 @@ colomn_tail returns [String value]
 
 tables
 :
-	table_name
+	table_name{$select_from::tableList.add($table_name.value);}
 	(
 		AS table_alias_name
+		{
+		$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
+		$select_from::tableList.add($table_name.value);
+		if($select_from::tableNameToAttrList.size()==0)
+			$select_from::tableNameToAttrList.put($table_name.value
+												, $select_from::attrNameList);
+		else if( !$select_from::tableNameToAttrList.containsKey($table_name.value)
+				&&$select_from::tableNameToAttrList.size()==1)
+			$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
+		}
 	)?
 	{
-		if($table_alias_name.value != null)
-			{
-				$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
-				$select_from::tableList.add($table_name.value);
-				if($select_from::tableNameToAttrList.size()==0)
-					$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList);
-				else if(!$select_from::tableNameToAttrList.containsKey($table_name.value)
-					&&$select_from::tableNameToAttrList.size()==1)
-					$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
-			}	
+		//if($table_alias_name.value != null)
 	}
 
 ;
