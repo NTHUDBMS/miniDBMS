@@ -116,17 +116,18 @@ attribute_list returns [
 		Hashtable <String, Integer> r_attrPosTable,
 		ArrayList <Integer> r_primaryList 
 	]
-locals [
+	locals [
 		Attribute _attribute,
 		ArrayList <Attribute> attrList, 
 		Hashtable <String, Integer> attrPosTable, // attribute position 
 		ArrayList <Integer> primaryList 
-	] @init {
+	] 
+	@init {
 		$attrList = new ArrayList <Attribute>();
 		$attrPosTable = new Hashtable <String, Integer>();
 		$primaryList = new ArrayList <Integer> ();
 	}
-@after {
+	@after {
 		$r_attrList = $attrList;
 		$r_attrPosTable = $attrPosTable;
 		$r_primaryList = $primaryList;

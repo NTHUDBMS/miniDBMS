@@ -47,48 +47,59 @@ public class DBMS {
 	}
 	
     public static void main(String[] args) throws Exception {
-        // create a CharStream that reads from standard input
-    	
+    	try{
+			os = new BufferedWriter(new FileWriter(dumpFile));
+		}catch(IOException e){
+			
+		}
     	
 		if ( args.length>0 ){
 			
-			inputFile = args[0];
+			System.out.println("Find input file "+args.length);
 			
 			
 			InputStream is;
 			
-			if ( inputFile!=null ) {
-				is = new FileInputStream(inputFile);
-				System.out.println("File name:"+inputFile);
-				try{
-					os = new BufferedWriter(new FileWriter(dumpFile));
-				}catch(IOException e){}
-				
-				System.out.println("----------Create Parser-----------");
-				ANTLRInputStream input = new ANTLRInputStream(is);
-				
-		        // create a lexer that feeds off of input CharStream
-		        SqlLexer lexer = new SqlLexer(input);
-		
-		        // create a buffer of tokens pulled from the lexer
-		        CommonTokenStream tokens = new CommonTokenStream(lexer);
-		
-		        // create a parser that feeds off the tokens buffer
-		        SqlParser parser = new SqlParser(tokens);
-		
-		        // start parse SQL
-		        System.out.println("----------Start Parsing-------------");
-		        parser.start();
+			for(int i = 0; i<args.length; i++ ){
+				inputFile = args[i];
+				if ( inputFile!=null ) {
+					
+					try{
+						is = new FileInputStream(inputFile);
+						System.out.println("\nFile #"+i+" name:"+inputFile);
+					}
+					catch(IOException e)
+					{
+						System.out.println("\nFile #"+i+" not found, name:"+inputFile);
+						continue;
+					}
 
-		        //ParseTree tree = parser.start(); // begin parsing at start rule
-		        //System.out.println(tree.toStringTree(parser)); // print LISP-style tree
-		        os.close();
-		        System.out.println("-----------End Parsing--------------");
-		        
-			}else{
-				System.out.println("Fail to open SQL file");
-				throw new Error ("DBMS: fail to fetch the SQL queries.");
-			}
+					ANTLRInputStream input = new ANTLRInputStream(is);
+					
+			        // create a lexer that feeds off of input CharStream
+			        SqlLexer lexer = new SqlLexer(input);
+			
+			        // create a buffer of tokens pulled from the lexer
+			        CommonTokenStream tokens = new CommonTokenStream(lexer);
+			
+			        // create a parser that feeds off the tokens buffer
+			        SqlParser parser = new SqlParser(tokens);
+			
+			        // start parse SQL
+			        System.out.println("----------Start Parsing-------------");
+			        parser.start();
+	
+			        //ParseTree tree = parser.start(); // begin parsing at start rule
+			        //System.out.println(tree.toStringTree(parser)); // print LISP-style tree
+			        
+			        System.out.println("-----------End Parsing--------------");
+			        
+				}else{
+					System.out.println("Fail to open SQL file");
+					throw new Error ("DBMS: fail to fetch the SQL queries.");
+				}
+			}// end for
+			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");
 		}
