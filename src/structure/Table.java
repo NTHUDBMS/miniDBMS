@@ -5,9 +5,17 @@ import java.util.*;
 import dbms.DBMS;
 
 /**
+ * <pre>
+ * Table structure which defined a table in DBMS
+ * Each table contains:
+ * 	1. table name
+ * 	2. attributes (list structure)
+ * 	3. primary position table (each element indicate the position of primary attribute)
+ * 	4. attribute position table (hash attribute name with position)
+ * 	5. ![referenceTable] (I don't know WTF is this)
+ * 	6. ![subSchemaList] (this either)
  * 
- * 
- *
+ * </pre>
  */
 public class Table implements Serializable {
 	/**
@@ -35,11 +43,11 @@ public class Table implements Serializable {
 	private Hashtable<String, Integer> attrPosTable;
 
 	/**
-	 * 
+	 * ??? WTF is this
 	 */
 	private Hashtable<String, ForeignReference> referenceTable;
 	/**
-	 * 
+	 * ?? WTF is this
 	 */
 	private ArrayList<String> subSchemaList = null;
 	

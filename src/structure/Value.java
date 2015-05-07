@@ -1,6 +1,8 @@
 package structure;
 /**
- * Value implement Serializable
+ * 
+ * Value implement Serializable<br>
+ * this structure is the basic data element in database
  * 
  */
 public class Value implements java.io.Serializable {

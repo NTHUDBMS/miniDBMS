@@ -26,6 +26,7 @@ public class DBMS {
 	public final static Boolean dumpParsingMsg = true;
 	public final static Boolean consoleMsg = true;
 	public final static String dumpFile = "Output.txt";
+	public final static DBExecutor executor = new DBExecutor();
 	private static BufferedWriter os;
 	private static String inputFile;
 	
@@ -99,6 +100,7 @@ public class DBMS {
 					throw new Error ("DBMS: fail to fetch the SQL queries.");
 				}
 			}// end for
+			DBMS.executor.cleanUp();
 			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");

@@ -39,11 +39,14 @@ public class DBExecutor{
 	 */
 	private static final String databaseDefUrl = "databaseDef.dat";
 	
+	/**
+	 * list of all the table currently contained in DBMS
+	 */
+	private ArrayList<String> tableList;
 	
 	public DBExecutor(){
 		// clear databaseDefUrl
-		File tableFile = new File(databaseDefUrl);
-		tableFile.delete();
+		this.tableList = new ArrayList<String>();
 	}
 	
 	/**
@@ -94,20 +97,21 @@ public class DBExecutor{
 		// built hashTable by tableName as hash key
 		Hashtable<String, Table> tables = null;
 		
-		// save table as a file
+		// find table definition data
 		File tableFile = new File(databaseDefUrl);
 		
-		//
 		if (tableFile.exists()) {
 			tables = this.getTableDef();
 		}else{
 			tables = new Hashtable<String, Table>();
 		}
 		
-		//
+		// create the table
 		if (!tables.containsKey(query.getTableName())) {
 			//store table in hash table
 			tables.put(query.getTableName(), query.makeTable());
+			this.tableList.add(query.getTableName());
+			
 			//write tables in tablefiles
 			this.writeTableDef(tableFile, tables);
 			
@@ -171,9 +175,8 @@ public class DBExecutor{
 			// check primary key null or notRepeat
 			if (tupleList != null && tuple != null) {
 				
-				
-				boolean primarykeysNotRepeat = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
-				if (primarykeysNotRepeat) {
+				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
+				if (!checkPrimaryKeyRepeated) {
 					tupleList.add(tuple);
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
@@ -189,7 +192,23 @@ public class DBExecutor{
 		}
 	}
 	
-	
+	public void printTuple(ArrayList <Value> tuple){
+		int i=0;
+		for(Value v : tuple){
+			switch(v.getType()){
+				case INT:
+					System.out.print("#"+i+" "+v.getInt()+"\t");
+					break;
+				case CHAR:
+					System.out.print("#"+i+" "+v.getChar()+"\t");
+					break;
+				case NULL:
+					System.out.print("#"+i+" "+"null"+"\t");
+					break;
+			}
+			i++;
+		}
+	}
 
 	public void select(Select query) throws IOException, Error, ClassNotFoundException{
 		Hashtable<String, Table> tables = null;
@@ -542,11 +561,15 @@ public class DBExecutor{
 		
 		//check every tuple
 		LABEL_OUTTER:
-		for (ArrayList <Value> tupleIterator: tupleList ) {
+		for (ArrayList <Value> tupleIterator: tupleList ) 
+		{
 			// in each tuple check primary key in new valueList whether is notRepeat  
-			for (Integer primaryPosition : primaryList) {
+			for (int primaryPosition : primaryList) 
+			{
 				// true if equals
-				if (tuple.get(primaryPosition).equals(tupleIterator.get(primaryPosition))) {
+				if (tuple.get(primaryPosition).equals(tupleIterator.get(primaryPosition))) 
+				{
+					this.printTuple(tuple);
 					notRepeat = true;
 					
 					break LABEL_OUTTER;
@@ -666,6 +689,10 @@ public class DBExecutor{
 		fileIn.close();
 
 		return tupleList;
+	}
+
+	public ArrayList<String> getTableList() {
+		return tableList;
 	}
 
 	/**
@@ -883,6 +910,22 @@ public class DBExecutor{
 			return ((IntExp) exp).accept(this, value);
 		}else{
 			return Boolean.valueOf(true);
+		}
+	}
+	
+	public void cleanUp(){
+		File tableFile = new File(databaseDefUrl);
+		
+		if (tableFile.exists()) {
+			
+			for(String tableName : this.tableList){
+				File tupleFile = new File(tableName + ".db");
+				if (tupleFile.exists()) {
+					tupleFile.delete();
+				}
+			}
+			
+			tableFile.delete();
 		}
 	}
 	

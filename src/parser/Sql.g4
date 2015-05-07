@@ -15,42 +15,45 @@ import structure.*;
 import dbms.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-  
+
 }
 
 @parser::members {
 	
-	private final static int maxTuple = 100;
-	private final static int maxAttr = 5;
-	private final static DBExecutor executor = new DBExecutor();
-	private boolean inValid;
-	
-	/**
-	 * Execute single SQL command. Won't execute if null
-	 * @param query : the SQL command
-	 */
-	public static void execute(Query query){
-		try{
-    		if (query != null) {
-    			DBMS.outConsole("execute: "+query.queryName);
-    			executor.execute(query);
-    		}
-    		else DBMS.outConsole("query fail\n----------");
-    	}
-		catch (Error ex)
-		{
-			System.err.println(ex.getMessage());
-			return;
-		}
-	}   	
-	
+private final static int maxTuple = 100;
+private final static int maxAttr = 5;
+private final static DBExecutor executor = new DBExecutor();
+private boolean inValid;
 
-	public static void pause(){
-		DBMS.outConsole("Press Enter to continue.");
-		try{
-			System.in.read();
-		}catch(Exception e){};
+/**
+ * Execute single SQL command. Won't execute if null
+ * @param query : the SQL command
+ */
+public static void execute(Query query){
+	try{
+		if (query != null) {
+			DBMS.outConsole("execute: "+query.queryName);
+			DBMS.executor.execute(query);
+		}
+		else DBMS.outConsole("query fail\n----------");
 	}
+	catch (Error ex)
+	{
+		System.err.println(ex.getMessage());
+		return;
+	}
+}   	
+
+public void endParse(){
+	this.executor.cleanUp();
+}
+
+public static void pause(){
+	DBMS.outConsole("Press Enter to continue.");
+	try{
+		System.in.read();
+	}catch(Exception e){};
+}
 	
 	
 }
@@ -270,7 +273,7 @@ length returns [int lengthToken]
 ;
 
 insert_into returns [Query query]
-locals [
+	locals [
 		Table table,
 	] @init {
 		 //iterator for List <int> attrPosition 
@@ -279,7 +282,7 @@ locals [
 		ArrayList <String> valueList = new ArrayList <String>();
 		String tableName = "";
 	}
-@after {
+	@after {
 		if(!inValid){
 			// check primary key not null
 			ArrayList<Integer> pList = $table.getPrimaryList();
@@ -429,46 +432,41 @@ colomn_declare returns [
 ;
 
 select_from returns [Query query]
-locals [
-	Map<String, ArrayList<String>> tableNameToAttrList,
-	/**
-	AliasToReal used to transform Alias Table name to real table name
-	Select S.studentId  S is the Alias 
-	but S defines at From clause 
-	how can we infer the real name before we parse to From clause?
-	also Where clause will call it again
-	and how to call this table
-	*/
-
-	Map<String, String> RealToAlias,/*used to look up real table name */
-	Multimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
-	ArrayList<String> attrNameList, //for first or not specify which
-	ArrayList<String> attrNameList2, //for second table
-	Condition cond,
-	ArrayList<String> tableList //we just have two table to compare
-] @init {
-	$tableNameToAttrList = new HashMap<String, ArrayList<String>> ();
-	$RealToAlias = new HashMap<String, String> ();  
-	$tableAndAttr = ArrayListMultimap.create();
-	$cond = null;
-	$attrNameList = new ArrayList<String> ();/*for first table */
-	$attrNameList2 = new ArrayList<String> ();/*for first table */
-	$tableList = new ArrayList<String> ();/*first table is tableList[0]  */ 
-	boolean selectAll = false;
-}
+	locals [
+		Map<String, ArrayList<String>> tableNameToAttrList,
+		/*
+		AliasToReal used to transform Alias Table name to real table name
+		Select S.studentId  S is the Alias 
+		but S defines at From clause 
+		how can we infer the real name before we parse to From clause?
+		also Where clause will call it again
+		and how to call this table
+		*/
+	
+		Map<String, String> RealToAlias,/*used to look up real table name */
+		Multimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
+		ArrayList<String> attrNameList, //for first or not specify which
+		ArrayList<String> attrNameList2, //for second table
+		Condition cond,
+		ArrayList<String> tableList //we just have two table to compare
+	] 
+	@init {
+		$tableNameToAttrList = new HashMap<String, ArrayList<String>> ();
+		$RealToAlias = new HashMap<String, String> ();  
+		$tableAndAttr = ArrayListMultimap.create();
+		$cond = null;
+		$attrNameList = new ArrayList<String> ();/*for first table */
+		$attrNameList2 = new ArrayList<String> ();/*for first table */
+		$tableList = new ArrayList<String> ();/*first table is tableList[0]  */ 
+		boolean selectAll = false;
+	}
 : //one table or two
-	SELECT colomns
-	(
-		COMMA colomns
-	)*
+	SELECT colomns (COMMA colomns)*
 	
 	// if From parse first then we know table and table_alias first
 	//then select columns would know which table attributes to put
 
-	FROM tables
-	(
-		COMMA tables
-	)*
+	FROM tables	(COMMA tables)*
 	{
 		//store tableAndAttr's attribute to attrlist
 		int tableSize = $tableList.size();
@@ -486,7 +484,7 @@ locals [
 
 	where_clause?
 	{
-			/**
+			/*
 			 * if just one table attributes  store in first
 			 * if two table attributes could all store in first if no alias specify
 			 * but if alias specify then we store attributes in first or two based on tableName
@@ -499,32 +497,43 @@ locals [
 	//only one table
 	SELECT COUNT LPARSE colomn_tail RPARSE
 	{
-				$attrNameList.add($colomn_tail.value);
-		}
-	/*value could be 1 attribute or Star */
+		$attrNameList.add($colomn_tail.value);
+	}
+	/*
+	 *value could be 1 attribute or Star
+	 */
 	FROM tables where_clause?
-	{$cond = $where_clause.cond;}
+	{
+		$cond = $where_clause.cond;
+	}
 
 	{
-			if($colomn_tail.value.equals("*"))
+			if($colomn_tail.value.equals("*")){
 				$query = new Select($tableList,$cond, true,0);
-			else/*list will only store one attribute*/
-				$query = new Select($attrNameList,$tableList, $cond,0); 
+			}
+			else{
+				$query = new Select($attrNameList,$tableList, $cond,0); //list will only store one attribute
+			}
+				 
 		}
 
 	|
-	/*only one table*/
 	SELECT SUM LPARSE colomn_tail RPARSE
-	{$attrNameList.add($colomn_tail.value);}
+	{
+		$attrNameList.add($colomn_tail.value);
+	}
 
 	FROM tables where_clause?
 	{$cond = $where_clause.cond;}
 
 	{
-			if($colomn_tail.value.equals("*"))
+			if($colomn_tail.value.equals("*")){
 				$query = new Select($tableList,$cond, true,1);
-			else/*list will only store one attribute*/
-				$query = new Select($attrNameList,$tableList, $cond,1); 
+			}
+			else //list will only store one attribute
+			{
+				$query = new Select($attrNameList,$tableList, $cond,1);
+			}
 	}
 
 ;
@@ -532,12 +541,12 @@ locals [
 /* store attributes based on table name 
 	 if not specify which table store in the attrNameList*/
 colomns
-locals [	
+	locals [	
 				//String tableName,
 				//String tableAliasName, 
 				//String colomnName
 		]
-		@init{
+	@init{
 		String tableName = null;
 		String tableAliasName = null; 
 		String colomnName; 
@@ -581,14 +590,17 @@ tables
 	(
 		AS table_alias_name
 		{
-		$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
-		$select_from::tableList.add($table_name.value);
-		if($select_from::tableNameToAttrList.size()==0)
-			$select_from::tableNameToAttrList.put($table_name.value
-												, $select_from::attrNameList);
-		else if( !$select_from::tableNameToAttrList.containsKey($table_name.value)
-				&&$select_from::tableNameToAttrList.size()==1)
-			$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
+			$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
+			$select_from::tableList.add($table_name.value);
+			if($select_from::tableNameToAttrList.size()==0){
+				$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList);
+			}
+			else if( !$select_from::tableNameToAttrList.containsKey($table_name.value)
+					&& $select_from::tableNameToAttrList.size()==1)
+			{
+				$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
+			}
+			
 		}
 	)?
 	{
@@ -598,16 +610,16 @@ tables
 ;
 
 where_clause returns [Condition cond]
-locals [
- 	Exp left,
- 	Exp right
- ] @init {
- 	$left = null;
- 	$right = null;
- }
-@after {
- 	$cond = new Condition($left);
- }
+	locals [
+	 	Exp left,
+	 	Exp right
+	 ] @init {
+	 	$left = null;
+	 	$right = null;
+	 }
+	@after {
+	 	$cond = new Condition($left);
+	 }
 :
 	WHERE bool_expr
 	{$left = $bool_expr.exp;}
@@ -636,7 +648,7 @@ logical_op returns [String value]
 
 ;
 
-/**
+/*
  * take out ()? from (compare operand )?
  * we don't know the value type is string or integer yet
  */
@@ -657,10 +669,10 @@ locals [
 
 ;
 
-/**
-operand's table_alias_name is not necessary to be alias
-could be table real name 
-*/
+
+//operand's table_alias_name is not necessary to be alias
+//could be table real name 
+
 
 operand returns [Exp exp]
 locals [String tableAlias, String colomnName] @after {	
@@ -672,11 +684,10 @@ locals [String tableAlias, String colomnName] @after {
 	{
 		$tableAlias = $table_alias_name.value;
 		$colomnName = $colomn_name.value;
-		if($tableAlias != null) /* alias will not used in this demo*/
-			/**
-fail to call select_from:: here
-tableAlias could be real table name, maybe transform it in executor?
-			*/
+		if($tableAlias != null) // alias will not used in this demo
+
+//fail to call select_from:: here
+//tableAlias could be real table name, maybe transform it in executor?
 			
 			$exp = new ColExp($tableAlias, $colomnName); 
 		else
@@ -775,9 +786,17 @@ type_varchar returns [String value]
 	x = VARCHAR_IDENTI
 	{
 		String temp = new String($x.text);
-		String[] split = temp.split("\'");
-		$value = split[1];
-		DBMS.dump($value);
+		if(temp.equals("''")){
+			$value = "";
+			DBMS.dump($value);
+		}
+		else
+		{
+			String[] split = temp.split("\'");
+			$value = split[1];
+			DBMS.dump($value);
+		}
+		
 	}
 
 ;
@@ -1019,7 +1038,7 @@ VARCHAR_IDENTI
 
 SINGLE_LINE_COMMENT
 :
-	'--' ~[\r\n]* -> channel ( HIDDEN )
+	'--' ~[\r\n]* -> skip
 ;
 
 MULTILINE_COMMENT
@@ -1028,7 +1047,7 @@ MULTILINE_COMMENT
 	(
 		'*/'
 		| EOF
-	) -> channel ( HIDDEN )
+	) -> skip
 ;
 
 TABS
@@ -1036,7 +1055,7 @@ TABS
 	[\t\u000B]
 	{DBMS.dump("\t");}
 
-	-> channel ( HIDDEN )
+	-> skip
 ;
 
 SPACE
@@ -1044,7 +1063,7 @@ SPACE
 	[ ]
 	{DBMS.dump(" ");}
 
-	-> channel ( HIDDEN )
+	-> skip
 ;
 
 NEWLINE
@@ -1052,7 +1071,7 @@ NEWLINE
 	'\r'? '\n'
 	{DBMS.dump("\n");}
 
-	-> channel ( HIDDEN )
+	-> skip
 ;
 
 fragment
