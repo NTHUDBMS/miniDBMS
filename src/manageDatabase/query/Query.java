@@ -1,4 +1,4 @@
-package manageDatabase;
+package manageDatabase.query;
 
 /**
  * This is the superclass of all SQL instructions.<br> 

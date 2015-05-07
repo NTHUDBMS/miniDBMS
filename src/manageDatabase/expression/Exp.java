@@ -1,4 +1,4 @@
-package manageDatabase;
+package manageDatabase.expression;
 
 import structure.Value;
 import dbms.DBExecutor;
@@ -21,6 +21,7 @@ public class Exp implements java.io.Serializable{
 	public Object accept(DBExecutor visitor, Value value) {
 		return visitor.visit(this, value); 
 	}
+	
 	/**
 	 * 
 	 * @param visitor

@@ -1,4 +1,4 @@
-package manageDatabase;
+package manageDatabase.expression;
 
 import java.util.ArrayList;
 import java.util.Hashtable;

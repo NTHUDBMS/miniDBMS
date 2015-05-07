@@ -1,5 +1,7 @@
-package manageDatabase;
+package manageDatabase.query;
 import java.util.ArrayList;
+
+import manageDatabase.expression.Condition;
 /**
  * Select Inherit Query<br>
  * Realized while parsing SQL query.<br>
@@ -8,20 +10,32 @@ import java.util.ArrayList;
  * @see Query DBExecutor
  * 
  */
+
 public class Select extends Query{
 	
 	/**
-	 * Columns to be select
+	 * Columns to be select<br>
+	 * for first table
 	 */
-	private ArrayList<String> attrList;//for first table
-	private ArrayList<String> attrList2;//for second table
+	private ArrayList<String> attrList;
 	
 	/**
-	 * target table to search
-	 * tableNames[0] first
-	 * tableNames[1] second
+	 * Columns to be select<br>
+	 * for second table
+	 */
+	private ArrayList<String> attrList2;
+	
+	/**
+	 * target table to search<br>
+	 * tableNames[0] first<br>
+	 * tableNames[1] second<br>
+	 */
+	
+	/**
+	 * name of the table
 	 */
 	private ArrayList<String> tableNames; 
+	
 	/**
 	 * Conditions specified with "WHERE" command
 	 */
@@ -40,10 +54,12 @@ public class Select extends Query{
 	/* mode 1 is  Count,  2 is Sum*/
 	
 	/**
+	 * <pre>
 	 * Constructor with select conditions
 	 * 2 table 2 attrlist
 	 * 1 table 1 attrlist
 	 * with condition or not
+	 * </pre>
 	 */
 	public Select(ArrayList<String> attrList,ArrayList<String >attrList2,
 			ArrayList<String> tableNames, Condition cond) 
@@ -56,10 +72,11 @@ public class Select extends Query{
 	}
 
 	
-	/**
+	/**<pre>
 	 * Constructor with select "*" mark
 	 * print two tables all or one tables all
 	 * and with condition or not
+	 *</pre>
 	 */
 	public Select(ArrayList<String> tableNames, Condition cond, boolean selectAll,int aggregateMode){
 		this.queryName = "SELECT";
@@ -67,6 +84,7 @@ public class Select extends Query{
 		this.cond = cond;
 		this.selectAll = true;
 	}
+
 
 	public Select(ArrayList<String> attrList, ArrayList<String> tableNames,
 			 Condition cond, int aggregateMode){
