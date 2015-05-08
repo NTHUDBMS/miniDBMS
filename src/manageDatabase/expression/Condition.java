@@ -1,9 +1,9 @@
-package manageDatabase;
+package manageDatabase.expression;
 
 
 import java.util.ArrayList;
 /**
- * 
+ * Condition class which store the restrictions specified in where clause<br>
  */
 public class Condition implements java.io.Serializable{
 	/**
@@ -11,18 +11,19 @@ public class Condition implements java.io.Serializable{
 	 */
 	private static final long serialVersionUID = 865421466L;
 	/**
-	 * 
+	 * Expression
 	 */
 	private Exp exp;
 	
 	/**
-	 * 
+	 * Constructor with expression
 	 * @param exp
 	 */
 	public Condition(Exp exp){
 		this.exp = exp;
 	}
 
+	
 	public Exp getExp(){
 		return this.exp;
 	}
@@ -56,7 +57,7 @@ public class Condition implements java.io.Serializable{
 	}
 
 	/**
-	 * 
+	 * Overload method idCheck(String, Exp)<br>
 	 * @param id
 	 * @return
 	 * 
@@ -64,6 +65,7 @@ public class Condition implements java.io.Serializable{
 	public boolean idCheck(String id){
 		return idCheck(id, this.exp);
 	}
+	
 	
 	/**
 	 * Check if attribute in this condition

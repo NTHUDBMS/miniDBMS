@@ -1,4 +1,4 @@
-package manageDatabase;
+package manageDatabase.expression;
 
 import structure.Value;
 import dbms.DBExecutor;

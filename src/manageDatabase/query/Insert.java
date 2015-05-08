@@ -1,4 +1,4 @@
-package manageDatabase;
+package manageDatabase.query;
 
 import java.util.ArrayList;
 
