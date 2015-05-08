@@ -1,5 +1,6 @@
 package structure;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * 
@@ -17,7 +18,17 @@ private static final long serialVersionUID = 1L;
 	private Type type;
 	private boolean primary;
 	private int length = 0;
+	private ArrayList <Type> columnData;
 	
+	
+	public ArrayList<Type> getColumnData() {
+		return columnData;
+	}
+
+	public void setColumnData(ArrayList<Type> columnData) {
+		this.columnData = columnData;
+	}
+
 	public Attribute(Type type, String attrName, int length) {
 		this.name = attrName;
 		this.type = type;

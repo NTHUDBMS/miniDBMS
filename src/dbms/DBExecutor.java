@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -24,6 +25,7 @@ import manageDatabase.StrExp;
 import manageDatabase.TuplesWithNameTable;
 import structure.Attribute;
 import structure.Table;
+import structure.TupleFileTemp;
 import structure.Value;
 
 /**
@@ -47,6 +49,7 @@ public class DBExecutor{
 	public DBExecutor(){
 		// clear databaseDefUrl
 		this.tableList = new ArrayList<String>();
+		this.tupleFileTemp = new ArrayList <TupleFileTemp>();
 	}
 	
 	/**
@@ -126,6 +129,12 @@ public class DBExecutor{
 	}
 
 	/**
+	 * used to store tuples, after insert complete store this to file 
+	 */
+	private ArrayList <TupleFileTemp> tupleFileTemp; //each table has one
+	
+
+	/**
 	 * The operation to perform SQL: INSERT.<br>
 	 * get tuple list from file
 	 * convert new tuple in string to new tuple in types
@@ -142,7 +151,7 @@ public class DBExecutor{
 			throws IOException, Error, ClassNotFoundException
 	{
 		Hashtable <String, Table> tables = null;
-		ArrayList <ArrayList <Value>> tupleList;
+		ArrayList <ArrayList <Value>> tupleListTemp = null;
 		Table table;
 		
 		///////////////////////////////////
@@ -162,35 +171,126 @@ public class DBExecutor{
 		if ((table = tables.get(query.getTableName()))!= null ) { 
 			// check values integrity and input in tuple
 			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
-			
-			// get tuple list by table name
-			File tupleFile = new File(query.getTableName() + ".db");
-			if (tupleFile.exists()) {
-				tupleList = this.getTupleList(tupleFile);
-			}
-			else{
-				tupleList = new ArrayList <ArrayList <Value>> ();
-			}
+			tupleListTemp = this.getTupleListTemp(query.getTableName());
 			
 			// check primary key null or notRepeat
-			if (tupleList != null && tuple != null) {
-				
-				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
+			if (tuple != null) {
+				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleListTemp, tuple);
 				if (!checkPrimaryKeyRepeated) {
-					tupleList.add(tuple);
+					//change
+					tupleListTemp.add(tuple);
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
 				}
 			}
 			
 			//see if we can just save one tuple instead of all tuples
-			this.saveTupleList(tupleFile, tupleList);
-			System.out.println("Tuple inserted successfully\n---------");
-
 		}else{
 			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found\n");
 		}
 	}
+
+	/**
+	 * used to find tuplelist <br>
+	 * if it is in memory, we take it,<br>
+	 * else we look from HardDisk <br>
+	 * it will call getTupleList if it doesn't find tuplelist in memory<br>
+	 * if not in file and not in memory
+	 * create a new one
+	 * @param tableName
+	 * @return tupleList
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	
+	private ArrayList <ArrayList <Value>>  getTupleListTemp(String tableName) throws ClassNotFoundException, IOException{
+		ArrayList <ArrayList <Value>>  tupleListTemp = null;
+		for (TupleFileTemp temp:this.tupleFileTemp) {
+			if (temp.getTableName().equals(tableName)) {
+				tupleListTemp = temp.getTupleList();
+			}
+		}
+		//can get from memory, look up from Disk
+		File tupleFile = new File(tableName + ".db");
+		if (tupleFile.exists()&&tupleListTemp==null) {
+			tupleListTemp = this.getTupleList(tupleFile);
+		}
+		//all new 
+		else if(!tupleFile.exists()&&tupleListTemp == null)
+		{
+			ArrayList <ArrayList <Value>> tupleListTemp1 = new ArrayList <ArrayList <Value>>();
+			TupleFileTemp newTupleFile = new TupleFileTemp(tableName, tupleListTemp1);
+			this.tupleFileTemp.add(newTupleFile);
+			tupleListTemp = tupleListTemp1;
+		}
+		return tupleListTemp;
+	}
+	/*
+	 * get tuple from tuplefile(tupples)
+	 * used for insertion 
+	 */
+	
+	@SuppressWarnings("unchecked")
+	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)throws IOException, ClassNotFoundException{
+		ArrayList <ArrayList <Value>>  tupleList = null;
+		FileInputStream fileIn = new FileInputStream(tupleFile);
+		ObjectInputStream in = new ObjectInputStream(fileIn);
+		tupleList = (ArrayList <ArrayList <Value>> ) in.readObject();
+		in.close();
+		fileIn.close();
+
+		return tupleList;
+	}
+
+	/**
+	 * save stored all store tupleList to file <br>
+	 * each table has a tupleList<br>
+	 * if file already has data<br>
+	 * it will clear it <br>
+	 * to avoid double insertion <br>
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
+	public void saveTupleListTemp() throws ClassNotFoundException, IOException
+	{
+		ArrayList <ArrayList <Value>> tupleList= null;
+		//save tupples in each table to related tupleFile
+		for (TupleFileTemp temp:this.tupleFileTemp) {
+			File tupleFile = new File(temp.getTableName() + ".db");
+			if (tupleFile.exists()) {
+				tupleList = this.getTupleList(tupleFile);
+				tupleList.clear(); //see if we can not clear 
+			}
+			else{
+				tupleList = new ArrayList <ArrayList <Value>> ();
+			}
+			//only append temp tupple list in memory
+			//so when we have multiple not continuing insert
+			// in sql, it will append the old but inserted ones
+			// solution add clear()
+			tupleList.addAll(temp.getTupleList());
+			//store ALL inserted tupples into file
+			this.saveTupleList(tupleFile, tupleList);
+			System.out.println("Tuple inserted successfully\n---------");
+		}		
+	}
+	
+	/**
+	 * 
+	 * @param tupleFile
+	 * @param tupleList
+	 * @throws IOException
+	 */
+	private void saveTupleList(File tupleFile, ArrayList <ArrayList <Value>> tupleList)throws IOException
+	{
+		FileOutputStream outFile = new FileOutputStream(tupleFile);
+		ObjectOutputStream out = new ObjectOutputStream(outFile);
+		//AppendingObjectOutputStream out = new AppendingObjectOutputStream(outFile);
+		out.writeObject(tupleList);
+		out.close();
+		outFile.close();
+	}
+	
 	
 	public void printTuple(ArrayList <Value> tuple){
 		int i=0;
@@ -589,7 +689,6 @@ public class DBExecutor{
 	 * 
 	 * @param tableDef : table from the table file
 	 * @param values : valueList from the query
-
 	 */
 	private ArrayList <Value> convertInsertValueType(Table table, ArrayList <String> values) throws Error
 	{
@@ -673,42 +772,27 @@ public class DBExecutor{
 		outFile.close();
 	}
 
-	/*
-	 * get tuple from tuplefile(tupples)
-	 * used for insertion 
-	 */
 	
-
-	@SuppressWarnings("unchecked")
-	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)throws IOException, ClassNotFoundException{
-		ArrayList <ArrayList <Value>>  tupleList = null;
-		FileInputStream fileIn = new FileInputStream(tupleFile);
-		ObjectInputStream in = new ObjectInputStream(fileIn);
-		tupleList = (ArrayList <ArrayList <Value>> ) in.readObject();
-		in.close();
-		fileIn.close();
-
-		return tupleList;
-	}
 
 	public ArrayList<String> getTableList() {
 		return tableList;
 	}
 
-	/**
-	 * 
-	 * @param tupleFile
-	 * @param tupleList
-	 * @throws IOException
-	 */
-	private void saveTupleList(File tupleFile, ArrayList <ArrayList <Value>> tupleList)throws IOException
-	{
-		FileOutputStream outFile = new FileOutputStream(tupleFile);
-		ObjectOutputStream out = new ObjectOutputStream(outFile);
-		out.writeObject(tupleList);
-		out.close();
-		outFile.close();
-	}
+	public class AppendingObjectOutputStream extends ObjectOutputStream {
+
+		  public AppendingObjectOutputStream(OutputStream out) throws IOException {
+		    super(out);
+		  }
+
+		  @Override
+		  protected void writeStreamHeader() throws IOException {
+		    // do not write a header, but reset:
+		    // this line added after another question
+		    // showed a problem with the original
+		    reset();
+		  }
+
+		}
 	
 	
 	/**
@@ -931,7 +1015,60 @@ public class DBExecutor{
 	
 }//end DBExecutor
 
+/*
 
+public void insert (Insert query)
+			throws IOException, Error, ClassNotFoundException
+	{
+		Hashtable <String, Table> tables = null;
+		//ArrayList <ArrayList <Value>> tupleList;
+		Table table;
+		
+		///////////////////////////////////
+		// get table from tableFile
+		///////////////////////////////////
+		File tableFile = new File(databaseDefUrl);
+		if (tableFile.exists()) {
+			tables = this.getTableDef();
+		}else{
+			throw new Error("INSERT: No database defined");
+		}
+		
+		///////////////////////////////////
+		// Insert into tables
+		// 	 using hash structure
+		///////////////////////////////////
+		if ((table = tables.get(query.getTableName()))!= null ) { 
+			// check values integrity and input in tuple
+			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
+			
+			// get tuple list by table name
+			File tupleFile = new File(query.getTableName() + ".db");
+			if (tupleFile.exists()) {
+				tupleList = this.getTupleList(tupleFile);
+			}
+			else{
+				tupleList = new ArrayList <ArrayList <Value>> ();
+			}
+			
+			// check primary key null or notRepeat
+			if (tupleList != null && tuple != null) {
+				
+				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
+				if (!checkPrimaryKeyRepeated) {
+					tupleList.add(tuple);
+				}else{
+					throw new Error ("INSERT: primary key is notRepeat or null\n");
+				}
+			}
+			
+			//see if we can just save one tuple instead of all tuples
+			this.saveTupleList(tupleFile, tupleList);
+			System.out.println("Tuple inserted successfully\n---------");
 
+		}else{
+			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found\n");
+		}
+	}
 
-
+*/

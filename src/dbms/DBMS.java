@@ -99,6 +99,8 @@ public class DBMS {
 					System.out.println("Fail to open SQL file");
 					throw new Error ("DBMS: fail to fetch the SQL queries.");
 				}
+				DBMS.executor.saveTupleListTemp();
+				
 			}// end for
 			DBMS.executor.cleanUp();
 			os.close();
