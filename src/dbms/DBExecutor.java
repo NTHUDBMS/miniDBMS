@@ -207,7 +207,14 @@ public class DBExecutor{
 			//not directly called from structure
 			//check if it is already exist or still in disk
 			//or not even created
-			getColumListTemp(table,attrList.get(i).getName()).add(tuple.get(i));
+			ArrayList <Value> columnList = getColumListTemp(table,attrList.get(i).getName());
+			if(columnList!=null)
+				columnList.add(tuple.get(i));
+			else 
+				{
+					columnList = new ArrayList<Value>();
+					columnList.add(tuple.get(i));
+				}
 		}
 	}
 	
@@ -227,20 +234,24 @@ public class DBExecutor{
 		//file I/O
 		//transform all tuples into column not just one column we want
 		//then next time we can directly take from memory
-		if(columnList == null&& tupleList !=null)
+		if(columnList == null&& tupleList.size()>0)
 		{
 			for(int i =0;i< tupleList.size();++i)
 			{
 				ArrayList <Value> tuple = tupleList.get(i);
-				for(int j= 0;j< attrList.size();++j)
-				{
-					attrList.get(j).getColumnList().add(tuple.get(j));
-				}
+				if(tuple!=null)
+					for(int j= 0;j< attrList.size();++j)
+					{
+						columnList = attrList.get(j).getColumnList();
+						if(columnList==null)
+							columnList = new ArrayList<Value> (); 
+						columnList.add(tuple.get(j));
+					}
 			}
-			
+			columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
 		}
 		//if can not found in file initialize here
-		else columnList = new ArrayList<Value>();
+		else columnList = new ArrayList<Value>(); //won't pass this weird
 		return columnList;
 	}
 	/**
