@@ -26,7 +26,6 @@ public class TupleFileTemp implements Serializable {
 	public TupleFileTemp(String tableName,ArrayList <ArrayList <Value>> tupleList) {
 		this.tableName = tableName;
 		this.setTupleList(tupleList);
-		// TODO Auto-generated constructor stub
 	}
 
 

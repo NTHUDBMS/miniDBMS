@@ -1,5 +1,8 @@
 package manageDatabase;
 import java.util.ArrayList;
+
+import manageDatabase.expression.Condition;
+import manageDatabase.query.Query;
 /**
  * Select Inherit Query<br>
  * Realized while parsing SQL query.<br>

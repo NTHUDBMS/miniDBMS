@@ -1,7 +1,13 @@
 package structure;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
+ * 1.attribute name
+ * 2.type
+ * 3.length for varchar
+ * 4.column list
+ * 5.primary or not
  * 
  * 
  */
@@ -17,7 +23,7 @@ private static final long serialVersionUID = 1L;
 	private Type type;
 	private boolean primary;
 	private int length = 0;
-	
+	private ArrayList<Value> columnList = null; //store column value
 	public Attribute(Type type, String attrName, int length) {
 		this.name = attrName;
 		this.type = type;
@@ -61,15 +67,24 @@ private static final long serialVersionUID = 1L;
 		this.length = length;
 	}
 	
-	public String toString(){
-		return this.name;
-	}
+	
+	//public String toString(){
+		//return this.name;
+	//}
 	
 	public boolean equals(Object o){
-		if(this.name.equals(o.toString()))
+		if(this.name.equals(o.toString())) //toString use java library
 			return true;
 		else
 			return false;
 		
+	}
+
+	public ArrayList<Value> getColumnList() {
+		return columnList;
+	}
+
+	public void setColumnList(ArrayList<Value> columnList) {
+		this.columnList = columnList;
 	}
 }

@@ -11,18 +11,18 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
 
-import manageDatabase.BinaryExp;
-import manageDatabase.Condition;
-import manageDatabase.Create;
-import manageDatabase.DoubleExp;
-import manageDatabase.Exp;
-import manageDatabase.IdExp;
-import manageDatabase.Insert;
-import manageDatabase.IntExp;
-import manageDatabase.Query;
 import manageDatabase.Select;
-import manageDatabase.StrExp;
-import manageDatabase.TuplesWithNameTable;
+import manageDatabase.expression.BinaryExp;
+import manageDatabase.expression.Condition;
+import manageDatabase.expression.DoubleExp;
+import manageDatabase.expression.Exp;
+import manageDatabase.expression.IdExp;
+import manageDatabase.expression.IntExp;
+import manageDatabase.expression.StrExp;
+import manageDatabase.query.Create;
+import manageDatabase.query.Insert;
+import manageDatabase.query.Query;
+import manageDatabase.query.TuplesWithNameTable;
 import structure.Attribute;
 import structure.Table;
 import structure.TupleFileTemp;
@@ -127,7 +127,7 @@ public class DBExecutor{
 		}
 		
 	}
-
+	
 	/**
 	 * used to store tuples, after insert complete store this to file 
 	 */
@@ -179,6 +179,7 @@ public class DBExecutor{
 				if (!checkPrimaryKeyRepeated) {
 					//change
 					tupleListTemp.add(tuple);
+					saveColumnListTemp(table, tuple);
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
 				}
@@ -189,7 +190,59 @@ public class DBExecutor{
 			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found\n");
 		}
 	}
+	
+	/**
+	 * input tuple elements to associated attrList
+	 * @param table
+	 * @param tuple
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 */
+	private void saveColumnListTemp(Table table,ArrayList <Value> tuple) throws ClassNotFoundException, IOException
+	{
+		ArrayList<Attribute> attrList = table.getAttrList();
+		
+		for(int i =0;i< tuple.size();++i)
+		{
+			//not directly called from structure
+			//check if it is already exist or still in disk
+			//or not even created
+			getColumListTemp(table,attrList.get(i).getName()).add(tuple.get(i));
+		}
+	}
+	
+	/**
+	 * retrieve columnList
+	 * if not found in memory could go to disk and set all column list
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 */
+	private ArrayList <Value> getColumListTemp(Table table, String attrName) throws ClassNotFoundException, IOException
+	{
+		ArrayList<Attribute> attrList = table.getAttrList();
+		ArrayList <Value> columnList;
+		columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
+		ArrayList<ArrayList <Value>> tupleList = getTupleListTemp(table.getTableName());
 
+		//file I/O
+		//transform all tuples into column not just one column we want
+		//then next time we can directly take from memory
+		if(columnList == null&& tupleList !=null)
+		{
+			for(int i =0;i< tupleList.size();++i)
+			{
+				ArrayList <Value> tuple = tupleList.get(i);
+				for(int j= 0;j< attrList.size();++j)
+				{
+					attrList.get(j).getColumnList().add(tuple.get(j));
+				}
+			}
+			
+		}
+		//if can not found in file initialize here
+		else columnList = new ArrayList<Value>();
+		return columnList;
+	}
 	/**
 	 * used to find tuplelist <br>
 	 * if it is in memory, we take it,<br>
