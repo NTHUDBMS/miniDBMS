@@ -10,7 +10,8 @@ grammar Sql;
 	
 import java.util.*;
 import java.io.*;
-import manageDatabase.*;
+import manageDatabase.query.*;
+import manageDatabase.expression.*;
 import structure.*;
 import dbms.*;
 import com.google.common.collect.ArrayListMultimap;
