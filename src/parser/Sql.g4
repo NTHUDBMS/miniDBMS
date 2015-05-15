@@ -55,6 +55,46 @@ public static void pause(){
 		System.in.read();
 	}catch(Exception e){};
 }
+
+public void dumpWhereClause(Exp e){
+	if(e instanceof BinaryExp){
+		BinaryExp t = (BinaryExp)e;
+		dumpWhereClause(t.getLeft());
+		System.out.print(t.getOp()+" ");
+		dumpWhereClause(t.getRight());
+	}else if(e instanceof ColExp){
+		ColExp t = (ColExp)e;
+		String dumpBuffer = (t.getTableName()!=null)?t.getTableName()+"."+t.getColomnName() :"";
+		System.out.print(dumpBuffer+" ");
+	}else if(e instanceof StrExp){
+		StrExp t = (StrExp)e;
+		System.out.print(t.getStr()+" ");
+	}else if(e instanceof IntExp){
+		IntExp t = (IntExp)e;
+		System.out.print(t.toString()+" ");
+	}else if(e instanceof IdExp){
+		IdExp t = (IdExp)e;
+		System.out.print(t.getId()+" ");
+	}
+}
+
+public class TableStruct{
+	public String tableName;
+	public String aliasName;
+	public TableStruct(String tname, String aname){
+		this.tableName = tname;
+		this.aliasName = aname;
+	}
+}
+
+public class ColumnStruct{
+	public String tableName;
+	public String columnName;
+	public ColumnStruct(String tname, String cname){
+		this.tableName = tname;
+		this.columnName = cname;
+	}
+}
 	
 	
 }
@@ -79,6 +119,12 @@ instructions @init { inValid = false;}
 	}
 
 ;
+
+/////////////////////////////////////////
+//
+//	Create instruction part
+//
+/////////////////////////////////////////
 
 create_table returns [Query query]
 locals [
@@ -154,9 +200,9 @@ attribute @init {
 		Attribute _attribute = $attribute_list::_attribute;
 	}
 :
-	colomn_name types
+	column_name types
 	{
-			String _attrName = $colomn_name.value;
+			String _attrName = $column_name.value;
 			_attribute = new Attribute(
 				$types.type,
 				_attrName,
@@ -175,7 +221,7 @@ attribute @init {
 					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
-				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken);
+				DBMS.outConsole("fetch column name: " + _attrName+" "+$types.lengthToken);
 				if(!$attribute_list::attrPosTable.containsKey(_attrName))
 					DBMS.outConsole("X");
 			}else{
@@ -190,12 +236,12 @@ primary_key @init {
 		Attribute _attribute = $attribute_list::_attribute;
 	}
 :
-	colomn_name types PRIMARY KEY
+	column_name types PRIMARY KEY
 	{
-		String _attrName = $colomn_name.value; // temporary local variable
+		String _attrName = $column_name.value; // temporary local variable
 		_attribute = new Attribute(
 			$types.type,
-			$colomn_name.value
+			$column_name.value
 		);
 		
 		// check attribute list not empty
@@ -216,7 +262,7 @@ primary_key @init {
 					Integer.valueOf($attribute_list::attrList.size())-1
 				);
 				
-				DBMS.outConsole("fetch colomn name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
+				DBMS.outConsole("fetch column name: " + _attrName+" "+$types.lengthToken+"| PrimaryKey");
 				if(!$attribute_list::attrPosTable.containsKey(_attrName))
 					DBMS.outConsole("X");
 			}
@@ -238,7 +284,7 @@ primary_key @init {
 		}
 		else{
 			 inValid = true;
-			DBMS.outConsole("CREATE TABLE: DUPLICATE PRIMARY KEY " + $colomn_name.value);
+			DBMS.outConsole("CREATE TABLE: DUPLICATE PRIMARY KEY " + $column_name.value);
 		}
 		
 	}
@@ -272,6 +318,12 @@ length returns [int lengthToken]
 
 	RPARSE
 ;
+
+/////////////////////////////////////////
+//
+//	Insert instruction part
+//
+/////////////////////////////////////////
 
 insert_into returns [Query query]
 	locals [
@@ -339,7 +391,7 @@ insert_into returns [Query query]
 	{ // insert with column declare
 			tableName = $table_name.value;
 			
-			// fetch table form hash
+			// fetch table from hash
 			try{
 				$table = executor.getTableByName(tableName);
 			}catch(Exception e){}
@@ -357,11 +409,11 @@ insert_into returns [Query query]
 			}
 		}
 
-	colomn_declare VALUES LPARSE consts
+	column_declare VALUES LPARSE consts
 	{
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++);
+				tempPosition = $column_declare.attrPosition.get(i++);
 				
 				// set by position
 				valueList.set(tempPosition, $consts.value); 
@@ -373,7 +425,7 @@ insert_into returns [Query query]
 		{
 			if(!inValid){
 				// pop attribute position
-				tempPosition = $colomn_declare.attrPosition.get(i++);
+				tempPosition = $column_declare.attrPosition.get(i++);
 				
 				// set by position
 				valueList.set(tempPosition, $consts.value); 
@@ -383,399 +435,322 @@ insert_into returns [Query query]
 	)* RPARSE
 ;
 
-colomn_declare returns [
-		List <Integer> attrPosition //return manual input position of values
-	] @init {
-		$attrPosition = new ArrayList<Integer>();
-		Hashtable <String, Integer> attrPosTable = null;
-		
-		if( $insert_into::table!=null){
-			attrPosTable = $insert_into::table.getAttrPosHashtable();
-			DBMS.outConsole("check table: "+$insert_into::table.getTableName());
-		}else {
-			DBMS.outConsole("insert_into::table null");
-		}
-		
+column_declare returns [List <Integer> attrPosition] 
+@init {
+	$attrPosition = new ArrayList<Integer>();
+	Hashtable <String, Integer> attrPosTable = null;
+	
+	if( $insert_into::table!=null){
+		attrPosTable = $insert_into::table.getAttrPosHashtable();
+		DBMS.outConsole("check table: "+$insert_into::table.getTableName());
+	}else {
+		DBMS.outConsole("insert_into::table null");
 	}
-:
-	LPARSE colomn_name
+	
+}
+	: LPARSE column_name
 	{
-			if(attrPosTable!=null){
-				int i;
-				if(attrPosTable.containsKey($colomn_name.value)){
-					i = attrPosTable.get($colomn_name.value);
-					$attrPosition.add(i); 
-					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
-				}else{
-					inValid = true;
-					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
-				}
+		if(attrPosTable!=null){
+			int i;
+			if(attrPosTable.containsKey($column_name.value)){
+				i = attrPosTable.get($column_name.value);
+				$attrPosition.add(i); 
+				DBMS.outConsole("declare column: "+$column_name.value+" # "+i);
+			}else{
+				inValid = true;
+				throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$column_name.value);
 			}
 		}
-
-	(
-		COMMA colomn_name
+	}
+	( COMMA column_name
 		{
 	 		if(attrPosTable!=null){
 				int i;
-				if(attrPosTable.containsKey($colomn_name.value)){
-					i = attrPosTable.get($colomn_name.value);
+				if(attrPosTable.containsKey($column_name.value)){
+					i = attrPosTable.get($column_name.value);
 					$attrPosition.add(i); 
-					DBMS.outConsole("declare column: "+$colomn_name.value+" # "+i);
+					DBMS.outConsole("declare column: "+$column_name.value+" # "+i);
 				}else{
 					inValid = true;
-					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$colomn_name.value);
+					throw new Error("INSERT: NO SUCH ATTRIBUTE: "+$column_name.value);
 				}
 			}
 	 	}
-
 	)* RPARSE
-;
+	;
+/////////////////////////////////////////
+//
+//	Select instruction part
+//
+/////////////////////////////////////////
 
 select_from returns [Query query]
-	locals [
-		Map<String, ArrayList<String>> tableNameToAttrList,
+locals [
+	
+	ArrayList<String> tableList, //we just have two table to compare
+	Hashtable<String,String> aliasTalbe,
+	Select.Aggregation aggregate
+] 
+@init {
+	$tableList = new ArrayList<String> ();
+	$aliasTalbe = new Hashtable<String,String>();
+	$aggregate = Select.Aggregation.NON;
+}
+@after{
+	DBMS.outConsole("---------------");
+}
+	: SELECT clist+=columns (COMMA clist+=columns)*
+	  FROM tlist+=tables	(COMMA tlist+=tables)*
+	  where_clause
+	{
+		// one table or two
+		ArrayList<String> attrList1 = new ArrayList<String>();
+		ArrayList<String> attrList2 = new ArrayList<String>();
 		
-//		AliasToReal used to transform Alias Table name to real table name
-//		Select S.studentId  S is the Alias 
-//		but S defines at From clause 
-//		how can we infer the real name before we parse to From clause?
-//		also Where clause will call it again
-//		and how to call this table
-	
-		Map<String, String> RealToAlias, /*used to look up real table name */
-		Multimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
-		ArrayList<String> attrNameList, //for first or not specify which
-		ArrayList<String> attrNameList2, //for second table
-		Condition cond,
-		ArrayList<String> tableList //we just have two table to compare
-	] 
-	@init {
-		$tableNameToAttrList = new HashMap<String, ArrayList<String>> ();
-		$RealToAlias = new HashMap<String, String> ();  
-		$tableAndAttr = ArrayListMultimap.create();
-		$cond = null;
-		$attrNameList = new ArrayList<String> ();/*for first table */
-		$attrNameList2 = new ArrayList<String> ();/*for first table */
-		$tableList = new ArrayList<String> ();/*first table is tableList[0]  */ 
-		boolean selectAll = false;
-	}
-: //one table or two
-	SELECT colomns (COMMA colomns)*
-	
-	// if From parse first then we know table and table_alias first
-	//then select columns would know which table attributes to put
-
-	FROM tables	(COMMA tables)*
-	{
-		//store tableAndAttr's attribute to attrlist
-		int tableSize = $tableList.size();
-		while(tableSize >0)
-		{
-			String tableName = $tableList.get(tableSize-1);
-			ArrayList <String > attrlist = $tableNameToAttrList.get(tableName);
-			String alias = $RealToAlias.get(tableName);
-			
-			if($select_from::tableAndAttr.get(tableName)!=null)
-				System.out.println($select_from::tableAndAttr.get(tableName));
-			
-				
-			pause();
-			
-			attrlist.addAll($select_from::tableAndAttr.get(tableName)); //add collection 
-			attrlist.addAll($select_from::tableAndAttr.get(alias));
-			tableSize --;//for while condition
-		}
-
-	}
-
-	where_clause?
-	{
-			/*
-			 * if just one table attributes  store in first
-			 * if two table attributes could all store in first if no alias specify
-			 * but if alias specify then we store attributes in first or two based on tableName
-			 */
-			 $query = new Select($attrNameList, $attrNameList2, $tableList, $cond);	 
-			 
-		}
-
-	|
-	//only one table
-	SELECT COUNT LPARSE colomn_tail RPARSE
-	{
-		$attrNameList.add($colomn_tail.value);
-	}
-	/*
-	 *value could be 1 attribute or Star
-	 */
-	FROM tables where_clause?
-	{
-		$cond = $where_clause.cond;
-	}
-
-	{
-		if($colomn_tail.value.equals("*")){
-			$query = new Select($tableList,$cond, true,0);
-		}
-		else{
-			$query = new Select($attrNameList,$tableList, $cond,0); //list will only store one attribute
-		}
-			 
-	}
-
-	|
-	SELECT SUM LPARSE colomn_tail RPARSE
-	{
-		$attrNameList.add($colomn_tail.value);
-	}
-
-	FROM tables where_clause?
-	{$cond = $where_clause.cond;}
-
-	{
-		if($colomn_tail.value.equals("*")){
-			$query = new Select($tableList,$cond, true,1);
-		}
-		else //list will only store one attribute
-		{
-			$query = new Select($attrNameList,$tableList, $cond,1);
-		}
-	}
-
-;
-
-/* store attributes based on table name 
-	 if not specify which table store in the attrNameList*/
-colomns
-	locals [	
-		//String tableName,
-		//String tableAliasName, 
-		//String colomnName
-	]
-	@init{
-		String tableName = null;
-		String tableAliasName = null; 
-		String colomnName; 
-		}
-:
-	(
-		table_name
-		| table_alias_name DOT
-		{
-			System.out.println(tableName+ tableAliasName);
-			tableName = $table_name.value;
-			tableAliasName = $table_alias_name.value;
-		}
-	)? colomn_tail
-	{
-   			colomnName = $colomn_tail.value;
-   			if(tableName ==null && tableAliasName == null)
-   			   	$select_from::attrNameList.add(colomnName); //attribute w/o table or alias Name
-   			else if(tableName!=null)
-   				$select_from::tableAndAttr.put(tableName, colomnName);
-   			else if(tableAliasName!= null)
-   				$select_from::tableAndAttr.put(tableAliasName, colomnName);
-
-   		}
-
-;
-
-colomn_tail returns [String value]
-:
-	x = colomn_name
-	{$value = $x.value;}
-
-	| y = STAR
-	{$value = $y.text;}
-
-;
-
-tables
-:
-	table_name{
-		$select_from::tableList.add($table_name.value);
-	}
-	(AS table_alias_name {
-			$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
-			$select_from::tableList.add($table_name.value);
-			if($select_from::tableNameToAttrList.size()==0){
-				$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList);
+		// collect elements, build table list
+		for(TablesContext temp : $tlist){
+			// check alias avalible, put to hashtable
+			if(temp.table.aliasName!=null){
+				$aliasTalbe.put(
+					temp.table.aliasName, 
+					temp.table.tableName
+				);
 			}
-			else if( !$select_from::tableNameToAttrList.containsKey($table_name.value)
-					&& $select_from::tableNameToAttrList.size()==1)
-			{
-				$select_from::tableNameToAttrList.put($table_name.value, $select_from::attrNameList2);
-			}
-			
+			$tableList.add(temp.table.tableName);
+			DBMS.outConsole("target table:\t"+temp.table.tableName);
 		}
-	)?
+		
+		// collect columns, recognize correspect table
+		int tableSelect = 0;
+		DBMS.outConsole("target columns:");
+		for(ColumnsContext temp : $clist){
+			
+			if(temp.col.tableName!=null){
+				// search respect table
+				if($aliasTalbe.size()!=0){ // have alias
+					if($aliasTalbe.containsKey(temp.col.tableName)){
+						String tname = $aliasTalbe.get(temp.col.tableName);
+						tableSelect = $tableList.indexOf(tname);
+					}
+					else
+					{
+						throw new Error("Error alias name");
+					}	
+				}
+				else // don't have alias
+				{
+					tableSelect = $tableList.indexOf(temp.col.tableName);
+				}
+			}
+			switch(tableSelect){
+				case 0: // table 1
+					attrList1.add(temp.col.columnName);
+					break;
+				case 1: // table 2
+					attrList2.add(temp.col.columnName);
+					break;
+				default: // error
+					throw new Error("Error table name");
+			}
+			String dumpBuffer = (temp.col.tableName!=null)?temp.col.tableName+"." :"";
+			DBMS.outConsole("\t\t"+dumpBuffer+temp.col.columnName);
+		}
+		$query = new Select(
+			attrList1, 
+			attrList2, 
+			$tableList, 
+			$where_clause.cond,
+			$aliasTalbe
+		);	
+	 
+	}
+	| SELECT COUNT LPARSE column_content RPARSE
+	  FROM tables 
+	  where_clause
 	{
-		//if($table_alias_name.value != null)
+		// only one table
+		ArrayList<String> attrList1 = new ArrayList<String>();
+		attrList1.add($column_content.value);
+		$tableList.add($tables.table.tableName);
+		
+		DBMS.outConsole("target table:\t"+$tables.table.tableName);
+		DBMS.outConsole("target columns:");
+		DBMS.outConsole("\t\t"+$column_content.value);
+		
+		$query = new Select(
+			attrList1,
+			$tableList, 
+			$where_clause.cond,
+			Select.Aggregation.COUNT
+		);	
+	}
+	| SELECT SUM LPARSE column_content RPARSE
+	  FROM tables 
+	  where_clause
+	{
+		ArrayList<String> attrList1 = new ArrayList<String>();
+		attrList1.add($column_content.value);
+		$tableList.add($tables.table.tableName);
+		
+		DBMS.outConsole("target table:\t"+$tables.table.tableName);
+		DBMS.outConsole("target columns:");
+		DBMS.outConsole("\t\t"+$column_content.value);
+		
+		$query = new Select(
+			attrList1,
+			$tableList, 
+			$where_clause.cond,
+			Select.Aggregation.SUM
+		);	
 	}
 
 ;
+
+
+columns returns[ColumnStruct col]
+@init{
+	String tname = null;
+}
+	: (table_alias_name DOT	{tname = $table_alias_name.value;} )? column_content
+	{
+		$col = new ColumnStruct(tname, $column_content.value);
+	}
+	;
+
+column_content returns [String value]
+	: x = column_name {$value = $x.value;}
+	| y = STAR {$value = $y.text;}
+	;
+
+
+tables returns[TableStruct table]
+@init{
+	String aname = null;
+}
+:
+	table_name (AS table_alias_name	{aname = $table_alias_name.value;} )?
+	{
+		$table = new TableStruct(
+			$table_name.value,
+			aname
+		);
+	}
+	;
 
 where_clause returns [Condition cond]
-	locals [
-	 	Exp left,
-	 	Exp right
-	 ] @init {
-	 	$left = null;
-	 	$right = null;
-	 }
-	@after {
-	 	$cond = new Condition($left);
-	 }
-:
-	WHERE bool_expr
-	{$left = $bool_expr.exp;}
-
-	(
-		logical_op bool_expr
-		{$right = $bool_expr.exp;}
-
-	)?
+	: WHERE bool_expr logical_op bool_expr2
 	{
-			//only 1 bool_expr
-			if($right != null)
-				$left =  new BinaryExp($left, $logical_op.text,$right);
+		// if only one restriction
+		BinaryExp temp = new BinaryExp(
+			$bool_expr.exp, 
+			$logical_op.text, 
+			$bool_expr2.exp
+		);
+		dumpWhereClause(temp);
+		System.out.print("\n");
+		$cond = new Condition(temp);
 	}
-
-;
+	| WHERE bool_expr
+	{
+		dumpWhereClause($bool_expr.exp);
+		System.out.print("\n");
+		$cond = new Condition($bool_expr.exp);
+	}
+	| // empty where clause
+	{
+		$cond = null;
+	}
+	;
 
 logical_op returns [String value]
-:
-	x =
-	(
-		AND
-		| OR
-	)
-	{$value = new String($x.text);}
+	: x = (AND | OR) {$value = new String($x.text);}
+	;
 
-;
+bool_expr2 returns [Exp exp]
+	: bool_expr {$exp = $bool_expr.exp;}
+	;
 
-/*
- * take out ()? from (compare operand )?
- * we don't know the value type is string or integer yet
- */
 bool_expr returns [Exp exp]
-locals [
-		Exp leftExp,
-		Exp rightExp
-	] @after {
-		$exp = $leftExp;
-	}
-:
-	operand compare operand
-	{	
-		$leftExp = $operand.exp;
-		$rightExp = $operand.exp;
-		$leftExp = new BinaryExp($leftExp, $compare.text, $rightExp);
-	}
+	: operand compare operand2
+	{ $exp = new BinaryExp($operand.exp, $compare.text, $operand2.exp);}
+	;
 
+operand2 returns [Exp exp]
+	: operand{ $exp = $operand.exp;}
 ;
-
-
-//operand's table_alias_name is not necessary to be alias
-//could be table real name 
-
 
 operand returns [Exp exp]
-locals [String tableAlias, String colomnName] @after {	
-	}
-:
-	(
-		table_alias_name DOT
-	)? colomn_name
+@init{
+	String tableAlias = null; 
+}
+	: (table_alias_name
 	{
-		$tableAlias = $table_alias_name.value;
-		$colomnName = $colomn_name.value;
-		if($tableAlias != null) // alias will not used in this demo
-
-//fail to call select_from:: here
-//tableAlias could be real table name, maybe transform it in executor?
-			
-			$exp = new ColExp($tableAlias, $colomnName); 
+		tableAlias = $table_alias_name.value;
+	} 
+	DOT)? column_name
+	{
+		if(tableAlias != null) 
+			$exp = new ColExp(tableAlias, $column_name.value); 
 		else
-		$exp = new StrExp($colomnName);
+			$exp = new IdExp($column_name.value);
 	}
-
-	| type_int
-	{$exp = new IntExp(Integer.parseInt($type_int.value));}
-
-;
+	| x=type_int
+	{
+		$exp = new IntExp(Integer.parseInt($x.value));
+	}
+	| y=type_varchar
+	{
+		$exp = new StrExp($y.value);
+	}
+	;
 
 consts returns [String value]
-:
-	x = type_int
-	{$value = $x.value; }
-
-	| z = type_varchar
-	{$value = $z.value;}
-
+	: x = type_int	{$value = $x.value; }
+	| z = type_varchar	{$value = $z.value;}
 	|
-	{
-		// null value
-		
-	}
-
 ;
 
 compare
-:
-	LT
+	: LT
 	| GT
 	| EQ
 	| NOT_EQ
 ;
 
 op
-:
-	PLUS
+	: PLUS
 	| MINUS
 	| STAR
 	| DIV
 ;
 
-colomn_name returns [String value]
-:
+id returns [String value]
+:	
 	x = IDENTIFIER
 	{
 		$value = new String($x.text);
 		DBMS.dump($x.text);
 	}
-
 ;
 
-colomn_alias_name returns [String value]
+column_name returns [String value]
 :
-	x = IDENTIFIER
-	{
-		$value = new String($x.text);
-		DBMS.dump($x.text);
-	}
+	id {$value = $id.value;}
+;
 
+column_alias_name returns [String value]
+:
+	id {$value = $id.value;}
 ;
 
 table_name returns [String value]
 :
-	x = IDENTIFIER
-	{
-		$value = new String($x.text);
-		DBMS.dump($x.text);
-	}
-
+	id {$value = $id.value;}
 ;
 
 table_alias_name returns [String value]
 :
-	x = IDENTIFIER
-	{
-		$value = new String($x.text);
-		DBMS.dump($x.text);
-	}
-
+	id {$value = $id.value;}
 ;
 
 type_int returns [String value]

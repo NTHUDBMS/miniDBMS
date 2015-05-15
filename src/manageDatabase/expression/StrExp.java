@@ -21,7 +21,7 @@ public class StrExp extends Exp{
 		this.str = str;
 	}
 	
-	public String getString(){
+	public String getStr(){
 		return this.str;
 	}
 	

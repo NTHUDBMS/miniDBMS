@@ -42,10 +42,6 @@ public class Select extends Query{
 	private Condition cond;
 	
 	/**
-	 *  SELECT * 
-	 */
-	private boolean selectAll;
-	/**
 	 * 
 	 */
 	private boolean isNormalUser = false;
@@ -53,10 +49,16 @@ public class Select extends Query{
 	/**
 	 * mode 1 is  Count,  2 is Sum
 	 */
-	private int aggregateMode= 0; 
+	private Aggregation aggregateMode; 
+	
+	public static enum Aggregation{
+		COUNT, SUM, NON
+	}
 	
 	/**
-	 * 
+	 * alias hash table<br>
+	 * key: alias<br>
+	 * value: table name<br>
 	 */
 	private Hashtable<String,String> alias;
 
@@ -76,13 +78,16 @@ public class Select extends Query{
 			ArrayList<String> attrList,
 			ArrayList<String >attrList2,
 			ArrayList<String> tableNames,
-			Condition cond) 
+			Condition cond,
+			Hashtable<String,String>alias) 
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
 		this.attrList2 = attrList2;
 		this.cond = cond;
+		this.alias = alias;
+		this.aggregateMode = Aggregation.NON;
 	}
 
 	/**
@@ -99,18 +104,16 @@ public class Select extends Query{
 	public Select(
 			ArrayList<String> tableNames, 
 			Condition cond, 
-			boolean selectAll,
 			int aggregateMode)
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.cond = cond;
-		this.selectAll = true;
 	}
 
 
 	/**
-	 * 
+	 * COUNT aggregate
 	 * @param attrList
 	 * @param tableNames
 	 * @param cond
@@ -120,16 +123,17 @@ public class Select extends Query{
 			ArrayList<String> attrList, 
 			ArrayList<String> tableNames,
 			Condition cond, 
-			int aggregateMode)
+			Aggregation aggregateMode)
 	{
+		
 		this.queryName = "SELECT";
-		this.setAggregateMode(aggregateMode);
-		this.cond = cond;
 		this.tableNames = tableNames;
 		this.attrList = attrList;
+		this.attrList2 = null;
+		this.cond = cond;
+		this.alias = null;
+		this.aggregateMode = aggregateMode;
 		
-//		Hashtable<String,String> temp = new Hashtable<String,String>();
-//		temp.
 	}
 
 	/**
@@ -163,17 +167,6 @@ public class Select extends Query{
 
 	
 	/**
-	 * checker of "*" mark
-	 */
-	public boolean isSelectAll(){
-		return this.selectAll;
-	}
-
-	
-	
-	
-	
-	/**
 	 * ??????????????? 
 	 */
 	public void setNormalUser(){
@@ -189,12 +182,12 @@ public class Select extends Query{
 	}
 
 
-	public int getAggregateMode() {
+	public Aggregation getAggregateMode() {
 		return aggregateMode;
 	}
 
 
-	public void setAggregateMode(int aggregateMode) {
+	public void setAggregateMode(Aggregation aggregateMode) {
 		this.aggregateMode = aggregateMode;
 	}
 

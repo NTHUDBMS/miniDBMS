@@ -26,5 +26,9 @@ public class IntExp extends Exp{
 	public Object accept(DBExecutor visitor, Value value) {
 		return visitor.visit(this, value); 
 	}
+	
+	public String toString(){
+		return Integer.toString(intNum);
+	}
 
 }
