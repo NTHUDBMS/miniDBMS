@@ -435,16 +435,15 @@ colomn_declare returns [
 select_from returns [Query query]
 	locals [
 		Map<String, ArrayList<String>> tableNameToAttrList,
-		/*
-		AliasToReal used to transform Alias Table name to real table name
-		Select S.studentId  S is the Alias 
-		but S defines at From clause 
-		how can we infer the real name before we parse to From clause?
-		also Where clause will call it again
-		and how to call this table
-		*/
+		
+//		AliasToReal used to transform Alias Table name to real table name
+//		Select S.studentId  S is the Alias 
+//		but S defines at From clause 
+//		how can we infer the real name before we parse to From clause?
+//		also Where clause will call it again
+//		and how to call this table
 	
-		Map<String, String> RealToAlias,/*used to look up real table name */
+		Map<String, String> RealToAlias, /*used to look up real table name */
 		Multimap <String, String> tableAndAttr, /*store table(alias or true) name with attribute */
 		ArrayList<String> attrNameList, //for first or not specify which
 		ArrayList<String> attrNameList2, //for second table
@@ -476,6 +475,13 @@ select_from returns [Query query]
 			String tableName = $tableList.get(tableSize-1);
 			ArrayList <String > attrlist = $tableNameToAttrList.get(tableName);
 			String alias = $RealToAlias.get(tableName);
+			
+			if($select_from::tableAndAttr.get(tableName)!=null)
+				System.out.println($select_from::tableAndAttr.get(tableName));
+			
+				
+			pause();
+			
 			attrlist.addAll($select_from::tableAndAttr.get(tableName)); //add collection 
 			attrlist.addAll($select_from::tableAndAttr.get(alias));
 			tableSize --;//for while condition
@@ -509,14 +515,14 @@ select_from returns [Query query]
 	}
 
 	{
-			if($colomn_tail.value.equals("*")){
-				$query = new Select($tableList,$cond, true,0);
-			}
-			else{
-				$query = new Select($attrNameList,$tableList, $cond,0); //list will only store one attribute
-			}
-				 
+		if($colomn_tail.value.equals("*")){
+			$query = new Select($tableList,$cond, true,0);
 		}
+		else{
+			$query = new Select($attrNameList,$tableList, $cond,0); //list will only store one attribute
+		}
+			 
+	}
 
 	|
 	SELECT SUM LPARSE colomn_tail RPARSE
@@ -528,13 +534,13 @@ select_from returns [Query query]
 	{$cond = $where_clause.cond;}
 
 	{
-			if($colomn_tail.value.equals("*")){
-				$query = new Select($tableList,$cond, true,1);
-			}
-			else //list will only store one attribute
-			{
-				$query = new Select($attrNameList,$tableList, $cond,1);
-			}
+		if($colomn_tail.value.equals("*")){
+			$query = new Select($tableList,$cond, true,1);
+		}
+		else //list will only store one attribute
+		{
+			$query = new Select($attrNameList,$tableList, $cond,1);
+		}
 	}
 
 ;
@@ -543,10 +549,10 @@ select_from returns [Query query]
 	 if not specify which table store in the attrNameList*/
 colomns
 	locals [	
-				//String tableName,
-				//String tableAliasName, 
-				//String colomnName
-		]
+		//String tableName,
+		//String tableAliasName, 
+		//String colomnName
+	]
 	@init{
 		String tableName = null;
 		String tableAliasName = null; 
@@ -587,10 +593,10 @@ colomn_tail returns [String value]
 
 tables
 :
-	table_name{$select_from::tableList.add($table_name.value);}
-	(
-		AS table_alias_name
-		{
+	table_name{
+		$select_from::tableList.add($table_name.value);
+	}
+	(AS table_alias_name {
 			$select_from::RealToAlias.put($table_name.value,$table_alias_name.value);
 			$select_from::tableList.add($table_name.value);
 			if($select_from::tableNameToAttrList.size()==0){

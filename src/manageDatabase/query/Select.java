@@ -1,5 +1,5 @@
 package manageDatabase.query;
-import java.util.ArrayList;
+import java.util.*;
 
 import manageDatabase.expression.Condition;
 /**
@@ -50,9 +50,16 @@ public class Select extends Query{
 	 */
 	private boolean isNormalUser = false;
 
+	/**
+	 * mode 1 is  Count,  2 is Sum
+	 */
 	private int aggregateMode= 0; 
-	/* mode 1 is  Count,  2 is Sum*/
 	
+	/**
+	 * 
+	 */
+	private Hashtable<String,String> alias;
+
 	/**
 	 * <pre>
 	 * Constructor with select conditions
@@ -60,9 +67,16 @@ public class Select extends Query{
 	 * 1 table 1 attrlist
 	 * with condition or not
 	 * </pre>
+	 * @param attrList
+	 * @param attrList2
+	 * @param tableNames
+	 * @param cond
 	 */
-	public Select(ArrayList<String> attrList,ArrayList<String >attrList2,
-			ArrayList<String> tableNames, Condition cond) 
+	public Select(
+			ArrayList<String> attrList,
+			ArrayList<String >attrList2,
+			ArrayList<String> tableNames,
+			Condition cond) 
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
@@ -71,14 +85,23 @@ public class Select extends Query{
 		this.cond = cond;
 	}
 
-	
-	/**<pre>
+	/**
+	 * <pre>
 	 * Constructor with select "*" mark
 	 * print two tables all or one tables all
 	 * and with condition or not
-	 *</pre>
+	 * </pre>
+	 * @param tableNames
+	 * @param cond
+	 * @param selectAll
+	 * @param aggregateMode
 	 */
-	public Select(ArrayList<String> tableNames, Condition cond, boolean selectAll,int aggregateMode){
+	public Select(
+			ArrayList<String> tableNames, 
+			Condition cond, 
+			boolean selectAll,
+			int aggregateMode)
+	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.cond = cond;
@@ -86,14 +109,28 @@ public class Select extends Query{
 	}
 
 
-	public Select(ArrayList<String> attrList, ArrayList<String> tableNames,
-			 Condition cond, int aggregateMode){
-				this.queryName = "SELECT";
-				this.setAggregateMode(aggregateMode);
-				this.cond = cond;
-				this.tableNames = tableNames;
-				this.attrList = attrList;
-			}
+	/**
+	 * 
+	 * @param attrList
+	 * @param tableNames
+	 * @param cond
+	 * @param aggregateMode
+	 */
+	public Select( 
+			ArrayList<String> attrList, 
+			ArrayList<String> tableNames,
+			Condition cond, 
+			int aggregateMode)
+	{
+		this.queryName = "SELECT";
+		this.setAggregateMode(aggregateMode);
+		this.cond = cond;
+		this.tableNames = tableNames;
+		this.attrList = attrList;
+		
+//		Hashtable<String,String> temp = new Hashtable<String,String>();
+//		temp.
+	}
 
 	/**
 	 * getter of tables to be selected
@@ -159,6 +196,16 @@ public class Select extends Query{
 
 	public void setAggregateMode(int aggregateMode) {
 		this.aggregateMode = aggregateMode;
+	}
+
+
+	public Hashtable<String,String> getAlias() {
+		return alias;
+	}
+
+
+	public void setAlias(Hashtable<String,String> alias) {
+		this.alias = alias;
 	}
 
 }
