@@ -169,7 +169,7 @@ public class DBExecutor{
 				if (!checkPrimaryKeyRepeated) {
 					//change
 					tupleListTemp.add(tuple);
-					saveColumnListTemp(table, tuple);
+					saveColumnList(table, tuple);
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
 				}
@@ -183,29 +183,35 @@ public class DBExecutor{
 	
 	/**
 	 * input tuple elements to associated attrList
-	 * @param table
-	 * @param tuple
+	 * @param table : target table to store tuple
+	 * @param tuple : tuple to be store
 	 * @throws IOException 
 	 * @throws ClassNotFoundException 
 	 */
-	private void saveColumnListTemp(Table table, ArrayList <Value> tuple) throws ClassNotFoundException, IOException
+	private void saveColumnList(
+			Table table, 
+			ArrayList <Value> tuple
+			) throws ClassNotFoundException, IOException
 	{
 		ArrayList<Attribute> attrList = table.getAttrList();
 		
+		// for each column of tuple
 		for(int i =0;i< tuple.size();++i)
 		{
 			//not directly called from structure
 			//check if it is already exist or still in disk
 			//or not even created
 			
-			ArrayList <Value> columnList = getColumListTemp(table, attrList.get(i).getName());
+			ArrayList <Value> columnList = getColumList(table, attrList.get(i).getName());
 			if(columnList!=null)
+			{
 				columnList.add(tuple.get(i));
+			}
 			else 
-				{
-					columnList = new ArrayList<Value>();
-					columnList.add(tuple.get(i));
-				}
+			{
+				columnList = new ArrayList<Value>();
+				columnList.add(tuple.get(i));
+			}
 		}
 	}
 	
@@ -215,13 +221,17 @@ public class DBExecutor{
 	 * @throws IOException 
 	 * @throws ClassNotFoundException 
 	 */
-	private ArrayList <Value> getColumListTemp(Table table, String attrName) throws ClassNotFoundException, IOException
+	private ArrayList <Value> getColumList(
+			Table table,
+			String attrName
+			) throws ClassNotFoundException, IOException
 	{
 		ArrayList<Attribute> attrList = table.getAttrList();
 		ArrayList <Value> columnList;
 		columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
 		ArrayList<ArrayList <Value>> tupleList = getTupleListTemp(table.getTableName());
 
+		
 		//file I/O
 		//transform all tuples into column not just one column we want
 		//then next time we can directly take from memory
@@ -379,7 +389,7 @@ public class DBExecutor{
 		}
 
 		ArrayList<String> tableNames = query.getTableNames();
-		ArrayList<String> columnList = query.getAttrStrList();
+		ArrayList<String> targetAttrList = query.getAttrStrList();
 		Condition selectCond = query.getCondition();
 		
 		//Hash table and arraylist to save table
@@ -416,20 +426,21 @@ public class DBExecutor{
 		}
 
 		//Get all attributes without duplicates
-		ArrayList<String> allAttributeList = null;
-		if(!query.getSelectAll()){
-			allAttributeList = new ArrayList<String>(columnList);
+		ArrayList<String> allAttrList = null;
+		if(query.getSelectAll()==false){
+			//if not select all, take out target attribute list
+			allAttrList = new ArrayList<String>(targetAttrList);
 
 		}else{
 			//If select all attributes
-			allAttributeList = new ArrayList<String>();
+			allAttrList = new ArrayList<String>();
 			
 			//Check if needs to check subschema
 			if(!isNormalUser){
 				for(String tableName : tableList.keySet()){
 					Table table = tableList.get(tableName);
 					for(Attribute attr : table.getAttrList()){
-						allAttributeList.add(attr.getName());
+						allAttrList.add(attr.getName());
 						
 					}
 				}
@@ -442,10 +453,10 @@ public class DBExecutor{
 					for(Attribute attr : table.getAttrList()){
 						if(subSchemaList != null){
 							if(subSchemaList.contains(attr.getName()) != false){
-								allAttributeList.add(attr.getName());
+								allAttrList.add(attr.getName());
 							}
 						}else{
-							allAttributeList.add(attr.getName());
+							allAttrList.add(attr.getName());
 						}
 					}
 	
@@ -458,14 +469,14 @@ public class DBExecutor{
 			//Add condition attributes into all attributes if not added yet
 			if(conditionAttributeList != null){
 				for(String condStrAttr : conditionAttributeList){
-					if(!allAttributeList.contains(condStrAttr)){
-						allAttributeList.add(condStrAttr);
+					if(!allAttrList.contains(condStrAttr)){
+						allAttrList.add(condStrAttr);
 					}
 				}
 			}
 
 		//Check if a selected attribute or conditional attribute in the table
-		for(String attrName : allAttributeList){
+		for(String attrName : allAttrList){
 			boolean containsAttr = false;
 			for(String tableName : tableList.keySet()){
 				Table table = tableList.get(tableName);
@@ -488,7 +499,7 @@ public class DBExecutor{
 		}
 
 		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
-		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttributeList, query.getSelectAll(), isNormalUser);
+		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttrList, query.getSelectAll(), isNormalUser);
 
 		//Evaluate condition
 		if(selectCond != null){
@@ -499,7 +510,7 @@ public class DBExecutor{
 		TuplesWithNameTable selectedValuesTable = null;
 
 		if(!query.getSelectAll()){
-			selectedValuesTable = this.getTuplesBySelectedValue(columnList, combinedTable);	
+			selectedValuesTable = this.getTuplesBySelectedValue(targetAttrList, combinedTable);	
 		}else{
 			selectedValuesTable = combinedTable;
 		}

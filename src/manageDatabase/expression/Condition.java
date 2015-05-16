@@ -44,12 +44,22 @@ public class Condition implements java.io.Serializable{
 	 * @param exp : 
 	 */
 	private void getIdList(ArrayList<String> idList, Exp exp){
+		if(exp == null)
+			return;
 		
-		if(exp != null && (exp instanceof IdExp)){
+		if(exp instanceof IdExp){
 			idList.add(((IdExp) exp).getId() );
 		}
 		
-		if(exp != null && (exp instanceof BinaryExp)){
+		if(exp instanceof ColExp){
+			idList.add(
+				((ColExp)exp).getTableName()+
+				"."+
+				((ColExp)exp).getColomnName()
+			);
+		}
+		
+		if(exp instanceof BinaryExp){
 			//boolean ret;
 			getIdList(idList, ((BinaryExp) exp).getLeft() );
 			getIdList(idList, ((BinaryExp) exp).getRight() );
