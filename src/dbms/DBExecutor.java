@@ -35,7 +35,15 @@ public class DBExecutor{
 	 * list of all the table currently contained in DBMS
 	 */
 	private ArrayList<String> tableList;
+
+	/**
+	 * used to store tuples, after insert complete store this to file 
+	 */
+	private ArrayList <TupleFile> tupleFilePool; //each table has one
 	
+	/**
+	 * Constructor which initialize the private member
+	 */
 	public DBExecutor(){
 		// clear databaseDefUrl
 		this.tableList = new ArrayList<String>();
@@ -118,10 +126,6 @@ public class DBExecutor{
 		
 	}
 	
-	/**
-	 * used to store tuples, after insert complete store this to file 
-	 */
-	private ArrayList <TupleFile> tupleFilePool; //each table has one
 	
 
 	/**
@@ -255,6 +259,7 @@ public class DBExecutor{
 		else columnList = new ArrayList<Value>(); //won't pass this weird
 		return columnList;
 	}
+	
 	/**
 	 * Fetch TupleList by correspond table name.<br>
 	 * If it's in memory, we take it, else we look from HardDisk.<br>
@@ -267,7 +272,6 @@ public class DBExecutor{
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	
 	private ArrayList <ArrayList <Value>>  getTupleList(String tableName) 
 			throws ClassNotFoundException, IOException
 	{
@@ -359,7 +363,7 @@ public class DBExecutor{
 	
 	/**
 	 * 
-	 * @param tupleFile
+	 * @param tupleFile 
 	 * @param tupleList
 	 * @throws IOException
 	 */
@@ -367,13 +371,17 @@ public class DBExecutor{
 	{
 		FileOutputStream outFile = new FileOutputStream(tupleFile);
 		ObjectOutputStream out = new ObjectOutputStream(outFile);
+		
 		//AppendingObjectOutputStream out = new AppendingObjectOutputStream(outFile);
 		out.writeObject(tupleList);
 		out.close();
 		outFile.close();
 	}
 	
-	
+	/**
+	 * Dump each value of this tuple
+	 * @param tuple : the tuple to be dump
+	 */
 	public void printTuple(ArrayList <Value> tuple){
 		int i=0;
 		for(Value v : tuple){
@@ -392,6 +400,13 @@ public class DBExecutor{
 		}
 	}
 
+	/**
+	 * Perform the Select action of the query
+	 * @param query : the "Select_From" query
+	 * @throws IOException
+	 * @throws Error
+	 * @throws ClassNotFoundException
+	 */
 	public void select(Select query) throws IOException, Error, ClassNotFoundException{
 		
 		Hashtable<String, Table> tablePool = null;
@@ -483,14 +498,15 @@ public class DBExecutor{
 			}
 
 		}
-			//Add condition attributes into all attributes if not added yet
-			if(conditionAttributeList != null){
-				for(String condStrAttr : conditionAttributeList){
-					if(!allAttrList.contains(condStrAttr)){
-						allAttrList.add(condStrAttr);
-					}
+		
+		//Add condition attributes into all attributes if not added yet
+		if(conditionAttributeList != null){
+			for(String condStrAttr : conditionAttributeList){
+				if(!allAttrList.contains(condStrAttr)){
+					allAttrList.add(condStrAttr);
 				}
 			}
+		}
 
 		//Check if a selected attribute or conditional attribute in the table
 		for(String attrName : allAttrList){
