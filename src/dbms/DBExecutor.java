@@ -15,7 +15,7 @@ import manageDatabase.expression.*;
 import manageDatabase.query.*;
 import structure.Attribute;
 import structure.Table;
-import structure.TupleFileTemp;
+import structure.TupleFile;
 import structure.Value;
 
 /**
@@ -39,7 +39,7 @@ public class DBExecutor{
 	public DBExecutor(){
 		// clear databaseDefUrl
 		this.tableList = new ArrayList<String>();
-		this.tupleFileTemp = new ArrayList <TupleFileTemp>();
+		this.tupleFilePool = new ArrayList <TupleFile>();
 	}
 	
 	/**
@@ -121,7 +121,7 @@ public class DBExecutor{
 	/**
 	 * used to store tuples, after insert complete store this to file 
 	 */
-	private ArrayList <TupleFileTemp> tupleFileTemp; //each table has one
+	private ArrayList <TupleFile> tupleFilePool; //each table has one
 	
 
 	/**
@@ -161,7 +161,7 @@ public class DBExecutor{
 		if ((table = tables.get(query.getTableName()))!= null ) { 
 			// check values integrity and input in tuple
 			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
-			tupleListTemp = this.getTupleListTemp(query.getTableName());
+			tupleListTemp = this.getTupleList(query.getTableName());
 			
 			// check primary key null or notRepeat
 			if (tuple != null) {
@@ -229,7 +229,7 @@ public class DBExecutor{
 		ArrayList<Attribute> attrList = table.getAttrList();
 		ArrayList <Value> columnList;
 		columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
-		ArrayList<ArrayList <Value>> tupleList = getTupleListTemp(table.getTableName());
+		ArrayList<ArrayList <Value>> tupleList = getTupleList(table.getTableName());
 
 		
 		//file I/O
@@ -256,47 +256,61 @@ public class DBExecutor{
 		return columnList;
 	}
 	/**
-	 * used to find tuplelist <br>
-	 * if it is in memory, we take it,<br>
-	 * else we look from HardDisk <br>
-	 * it will call getTupleList if it doesn't find tuplelist in memory<br>
-	 * if not in file and not in memory
-	 * create a new one
-	 * @param tableName
-	 * @return tupleList
+	 * Fetch TupleList by correspond table name.<br>
+	 * If it's in memory, we take it, else we look from HardDisk.<br>
+	 * ---Call getTupleList() if in HardDisk.<br>
+	 * If not in file and not in memory, create a new one.
+	 * 
+	 * @param tableName : table the fetch data
+	 * @return tuple list of the table
+	 * 
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
 	
-	private ArrayList <ArrayList <Value>>  getTupleListTemp(String tableName) throws ClassNotFoundException, IOException{
-		ArrayList <ArrayList <Value>>  tupleListTemp = null;
-		for (TupleFileTemp temp:this.tupleFileTemp) {
+	private ArrayList <ArrayList <Value>>  getTupleList(String tableName) 
+			throws ClassNotFoundException, IOException
+	{
+		ArrayList <ArrayList <Value>>  tupleListReturn = null;
+		
+		//fetch tupleFile if still store in memroy
+		for (TupleFile temp : this.tupleFilePool) {
 			if (temp.getTableName().equals(tableName)) {
-				tupleListTemp = temp.getTupleList();
+				tupleListReturn = temp.getTupleList();
 			}
 		}
-		//can get from memory, look up from Disk
-		File tupleFile = new File(tableName + ".db");
-		if (tupleFile.exists()&&tupleListTemp==null) {
-			tupleListTemp = this.getTupleList(tupleFile);
-		}
-		//all new 
-		else if(!tupleFile.exists()&&tupleListTemp == null)
-		{
-			ArrayList <ArrayList <Value>> tupleListTemp1 = new ArrayList <ArrayList <Value>>();
-			TupleFileTemp newTupleFile = new TupleFileTemp(tableName, tupleListTemp1);
-			this.tupleFileTemp.add(newTupleFile);
-			tupleListTemp = tupleListTemp1;
-		}
-		return tupleListTemp;
+		
+		//tupleFile not in memory, fetch from HardDisk
+		if(tupleListReturn==null){
+			File tupleFile = new File(tableName + ".db");
+			if (tupleFile.exists())
+			{
+				tupleListReturn = this.getTupleList(tupleFile);
+			}
+			else
+			{
+				//not exist, create new one & put into pool
+				tupleListReturn = new ArrayList <ArrayList <Value>>();
+				TupleFile newTupleFile = new TupleFile(tableName, tupleListReturn);
+				this.tupleFilePool.add(newTupleFile);
+			}
+		}// end if tupleListReturn
+			
+		return tupleListReturn;
 	}
-	/*
-	 * get tuple from tuplefile(tupples)
-	 * used for insertion 
-	 */
 	
 	@SuppressWarnings("unchecked")
-	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)throws IOException, ClassNotFoundException{
+	/**
+	 * get tuple from tuplefile (tupples)
+	 * used for insertion
+	 * @param tupleFile
+	 * @return
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)
+			throws IOException, ClassNotFoundException
+	{
 		ArrayList <ArrayList <Value>>  tupleList = null;
 		FileInputStream fileIn = new FileInputStream(tupleFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
@@ -316,11 +330,12 @@ public class DBExecutor{
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	public void saveTupleListTemp() throws ClassNotFoundException, IOException
+	public void saveTupleList() throws ClassNotFoundException, IOException
 	{
 		ArrayList <ArrayList <Value>> tupleList= null;
-		//save tupples in each table to related tupleFile
-		for (TupleFileTemp temp:this.tupleFileTemp) {
+		
+		//save tuples in each table to related tupleFile
+		for (TupleFile temp : this.tupleFilePool) {
 			File tupleFile = new File(temp.getTableName() + ".db");
 			if (tupleFile.exists()) {
 				tupleList = this.getTupleList(tupleFile);
@@ -329,14 +344,16 @@ public class DBExecutor{
 			else{
 				tupleList = new ArrayList <ArrayList <Value>> ();
 			}
-			//only append temp tupple list in memory
+			
+			//only append temp tuple list in memory
 			//so when we have multiple not continuing insert
 			// in sql, it will append the old but inserted ones
 			// solution add clear()
 			tupleList.addAll(temp.getTupleList());
+			
 			//store ALL inserted tupples into file
 			this.saveTupleList(tupleFile, tupleList);
-			System.out.println("Tuple inserted successfully\n---------");
+			System.out.println("TupleFile store successfully\n---------");
 		}		
 	}
 	
