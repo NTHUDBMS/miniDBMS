@@ -42,6 +42,11 @@ public class Select extends Query{
 	private Condition cond;
 	
 	/**
+	 * if this query has "*" command
+	 */
+	private boolean isSelectAll;
+	
+	/**
 	 * 
 	 */
 	private boolean isNormalUser = false;
@@ -88,29 +93,8 @@ public class Select extends Query{
 		this.cond = cond;
 		this.alias = alias;
 		this.aggregateMode = Aggregation.NON;
+		this.checkSelectAll();
 	}
-
-	/**
-	 * <pre>
-	 * Constructor with select "*" mark
-	 * print two tables all or one tables all
-	 * and with condition or not
-	 * </pre>
-	 * @param tableNames
-	 * @param cond
-	 * @param selectAll
-	 * @param aggregateMode
-	 */
-	public Select(
-			ArrayList<String> tableNames, 
-			Condition cond, 
-			int aggregateMode)
-	{
-		this.queryName = "SELECT";
-		this.tableNames = tableNames;
-		this.cond = cond;
-	}
-
 
 	/**
 	 * COUNT aggregate
@@ -133,7 +117,7 @@ public class Select extends Query{
 		this.cond = cond;
 		this.alias = null;
 		this.aggregateMode = aggregateMode;
-		
+		this.checkSelectAll();
 	}
 
 	/**
@@ -155,6 +139,37 @@ public class Select extends Query{
 	 */
 	public ArrayList<String> getAttrStrList2(){
 		return this.attrList2;
+	}
+	
+
+	private boolean checkSelectAll(){
+		boolean ans = false;
+		ArrayList<String> index;
+		
+		try {
+			index = this.attrList2;
+			for(String temp : index){
+				if(temp.equals("*")){
+					ans = true;
+					break;
+				}
+			}
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		} finally{
+			if(ans)
+				return ans;
+		}
+		
+		index = this.attrList;
+		for(String temp : index){
+			if(temp.equals("*")){
+				ans = true;
+				break;
+			}
+		}
+		
+		return ans;
 	}
 	
 	
@@ -199,6 +214,15 @@ public class Select extends Query{
 
 	public void setAlias(Hashtable<String,String> alias) {
 		this.alias = alias;
+	}
+
+
+	public void setSelectAll(boolean isSelectAll) {
+		this.isSelectAll = isSelectAll;
+	}
+	
+	public boolean getSelectAll(){
+		return this.isSelectAll;
 	}
 
 }

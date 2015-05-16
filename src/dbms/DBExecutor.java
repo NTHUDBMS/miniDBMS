@@ -366,140 +366,144 @@ public class DBExecutor{
 	}
 
 	public void select(Select query) throws IOException, Error, ClassNotFoundException{
-//		Hashtable<String, Table> tables = null;
-//		boolean isNormalUser = query.isNormalUser();
-//		File tableFile = new File(databaseDefUrl);
-//		
-//		//Check if database defined
-//		if(tableFile.exists()){
-//			tables = this.getTableDef();
-//		}else{
-//			throw new Error("SELECT: No Database Defined");
-//		}
-//
-//		ArrayList<String> tableNames = query.getTableNames();
-//		ArrayList<String> attrStrList = query.getAttrStrList();
-//		Condition selectCond = query.getCondition();
-//		//Hash table and arraylist to save table
-//		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
-//		ArrayList<Table> tableArrayList = new ArrayList<Table>();
-//		//Hash table to save tuples for each table
-//		Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashTable = new Hashtable<String, ArrayList<ArrayList<Value>> >();
-//
-//		//Check if the table defined
-//		for(String tableName : tableNames){
-//			if(!tables.containsKey(tableName)){
-//				throw new Error("SELECT: No table " + tableName + " Found");
-//			}else{
-//				tableList.put(tableName, tables.get(tableName));
-//				tableArrayList.add(tables.get(tableName));
-//			}
-//
-//			File tupleFile = new File(tableName + ".db");
-//			if(!tupleFile.exists()){
-//				throw new Error("SELECT: No tuple in the table " + tableName); 
-//			}else{
-//				ArrayList< ArrayList<Value> > tupleList = this.getTupleList(tupleFile);
-//				tupleHashTable.put(tableName, tupleList);
-//			}
-//			
-//		}
-//
-//		//Get conditional attributes if not null
-//		ArrayList<String> conditionAttributeList = null;
-//		if(selectCond != null){
-//			conditionAttributeList = selectCond.getIdList();
-//		}
-//
-//		//Get all attributes without duplicates
-//		ArrayList<String> allAttributeList = null;
-//		if(!query.isSelectAll()){
-//			allAttributeList = new ArrayList<String>(attrStrList);
-//
-//		}else{
-//			//If select all attributes
-//			allAttributeList = new ArrayList<String>();
-//			
-//			//Check if needs to check subschema
-//			if(!isNormalUser){
-//				for(String tableName : tableList.keySet()){
-//					Table table = tableList.get(tableName);
-//					for(Attribute attr : table.getAttrList()){
-//						allAttributeList.add(attr.getName());
-//						
-//					}
-//				}
-//
-//			}else{
-//				//Put all attributes in the subschema
-//				for(String tableName : tableList.keySet()){
-//					Table table = tableList.get(tableName);
-//					ArrayList<String> subSchemaList = table.getSubschemaList();
-//					for(Attribute attr : table.getAttrList()){
-//						if(subSchemaList != null){
-//							if(subSchemaList.contains(attr.getName()) != false){
-//								allAttributeList.add(attr.getName());
-//							}
-//						}else{
-//							allAttributeList.add(attr.getName());
-//						}
-//					}
-//	
-//				}
-//
-//
-//			}
-//
-//		}
-//			//Add condition attributes into all attributes if not added yet
-//			if(conditionAttributeList != null){
-//				for(String condStrAttr : conditionAttributeList){
-//					if(!allAttributeList.contains(condStrAttr)){
-//						allAttributeList.add(condStrAttr);
-//					}
-//				}
-//			}
-//
-//		//Check if a selected attribute or conditional attribute in the table
-//		for(String attrName : allAttributeList){
-//			boolean containsAttr = false;
-//			for(String tableName : tableList.keySet()){
-//				Table table = tableList.get(tableName);
-//				ArrayList<String> subSchemaList = table.getSubschemaList();
-//
-//				if(table.getAttrPos(attrName) != -1){
-//					containsAttr = true;
-//
-//					//Check subschema for normal user
-//					if(isNormalUser && subSchemaList != null){
-//						if(subSchemaList.contains(attrName) == false){
-//							containsAttr = false;
-//						}
-//					}
-//				}
-//			}
-//			if(containsAttr == false){
-//				throw new Error("SELECT: Attribute " + attrName + " does not exists");
-//			}
-//		}
-//
-//		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
-//		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttributeList, query.isSelectAll(), isNormalUser);
-//
-//		//Evaluate condition
-//		if(selectCond != null){
-//			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
-//		}
-//		
-//		//Obtain selected values tuples
-//		TuplesWithNameTable selectedValuesTable = null;
-//
-//		if(!query.isSelectAll()){
-//			selectedValuesTable = this.getTuplesBySelectedValue(attrStrList, combinedTable);	
-//		}else{
-//			selectedValuesTable = combinedTable;
-//		}
-//		printTable(selectedValuesTable);
+		
+		Hashtable<String, Table> tablePool = null;
+		boolean isNormalUser = query.isNormalUser();
+		File tableFile = new File(databaseDefUrl);
+		
+		//Check if database defined
+		if(tableFile.exists()){
+			tablePool = this.getTableDef();
+		}else{
+			throw new Error("SELECT: No Table Defined");
+		}
+
+		ArrayList<String> tableNames = query.getTableNames();
+		ArrayList<String> columnList = query.getAttrStrList();
+		Condition selectCond = query.getCondition();
+		
+		//Hash table and arraylist to save table
+		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
+		ArrayList<Table> tableArrayList = new ArrayList<Table>();
+		
+		//Hash table to save tuples for each table
+		Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashTable = 
+				new Hashtable<String, ArrayList<ArrayList<Value>> >();
+
+		//Check if the table defined
+		for(String tableName : tableNames){
+			if(!tablePool.containsKey(tableName)){
+				throw new Error("SELECT: No table " + tableName + " Found");
+			}else{
+				tableList.put(tableName, tablePool.get(tableName));
+				tableArrayList.add(tablePool.get(tableName));
+			}
+
+			File tupleFile = new File(tableName + ".db");
+			if(!tupleFile.exists()){
+				throw new Error("SELECT: No data in the table: " + tableName); 
+			}else{
+				ArrayList< ArrayList<Value> > tupleList = this.getTupleList(tupleFile);
+				tupleHashTable.put(tableName, tupleList);
+			}
+			
+		}
+
+		//Get conditional attributes if not null
+		ArrayList<String> conditionAttributeList = null;
+		if(selectCond != null){
+			conditionAttributeList = selectCond.getIdList();
+		}
+
+		//Get all attributes without duplicates
+		ArrayList<String> allAttributeList = null;
+		if(!query.getSelectAll()){
+			allAttributeList = new ArrayList<String>(columnList);
+
+		}else{
+			//If select all attributes
+			allAttributeList = new ArrayList<String>();
+			
+			//Check if needs to check subschema
+			if(!isNormalUser){
+				for(String tableName : tableList.keySet()){
+					Table table = tableList.get(tableName);
+					for(Attribute attr : table.getAttrList()){
+						allAttributeList.add(attr.getName());
+						
+					}
+				}
+
+			}else{
+				//Put all attributes in the subschema
+				for(String tableName : tableList.keySet()){
+					Table table = tableList.get(tableName);
+					ArrayList<String> subSchemaList = table.getSubschemaList();
+					for(Attribute attr : table.getAttrList()){
+						if(subSchemaList != null){
+							if(subSchemaList.contains(attr.getName()) != false){
+								allAttributeList.add(attr.getName());
+							}
+						}else{
+							allAttributeList.add(attr.getName());
+						}
+					}
+	
+				}
+
+
+			}
+
+		}
+			//Add condition attributes into all attributes if not added yet
+			if(conditionAttributeList != null){
+				for(String condStrAttr : conditionAttributeList){
+					if(!allAttributeList.contains(condStrAttr)){
+						allAttributeList.add(condStrAttr);
+					}
+				}
+			}
+
+		//Check if a selected attribute or conditional attribute in the table
+		for(String attrName : allAttributeList){
+			boolean containsAttr = false;
+			for(String tableName : tableList.keySet()){
+				Table table = tableList.get(tableName);
+				ArrayList<String> subSchemaList = table.getSubschemaList();
+
+				if(table.getAttrPos(attrName) != -1){
+					containsAttr = true;
+
+					//Check subschema for normal user
+					if(isNormalUser && subSchemaList != null){
+						if(subSchemaList.contains(attrName) == false){
+							containsAttr = false;
+						}
+					}
+				}
+			}
+			if(containsAttr == false){
+				throw new Error("SELECT: Attribute " + attrName + " does not exists");
+			}
+		}
+
+		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
+		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttributeList, query.getSelectAll(), isNormalUser);
+
+		//Evaluate condition
+		if(selectCond != null){
+			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
+		}
+		
+		//Obtain selected values tuples
+		TuplesWithNameTable selectedValuesTable = null;
+
+		if(!query.getSelectAll()){
+			selectedValuesTable = this.getTuplesBySelectedValue(columnList, combinedTable);	
+		}else{
+			selectedValuesTable = combinedTable;
+		}
+		printTable(selectedValuesTable);
 	}
 
 	/**
