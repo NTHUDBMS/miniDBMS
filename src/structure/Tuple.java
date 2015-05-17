@@ -6,7 +6,8 @@ package structure;
 import java.util.ArrayList;
 
 /**
- *
+ * Self-defined class of an ArrayList of Value<br>
+ * Add something more
  */
 public class Tuple extends ArrayList<Value>{
 
@@ -15,26 +16,11 @@ public class Tuple extends ArrayList<Value>{
 	 */
 	private static final long serialVersionUID = 7662373687797491697L;
 	
-	/**
-	 * Data of this tuple
-	 */
-	private ArrayList<Value> data;
+	public Tuple(){
+		super();
+	}
 	
-	/**
-	 * Constructor
-	 * @param data : the data of tuple
-	 */
 	public Tuple(ArrayList<Value>data){
-		this.setData(data);
+		super(data);
 	}
-
-	public ArrayList<Value> getData() {
-		return data;
-	}
-
-	public void setData(ArrayList<Value> data) {
-		this.data = data;
-	}
-	
-
 }

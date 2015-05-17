@@ -70,7 +70,7 @@ public class Insert extends Query{
 	}
 	
 	/**
-	 * Getter of private menber: valueList
+	 * Get values to be inserted from query
 	 * @return : the valueList
 	 */
 	public ArrayList<String> getValueList(){

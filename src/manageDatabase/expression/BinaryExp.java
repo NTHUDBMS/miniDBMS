@@ -1,10 +1,8 @@
 package manageDatabase.expression;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
-
-import structure.Value;
-import dbms.DBExecutor;
+import java.util.*;
+import structure.*;
+import dbms.*;
 /**
  * Binary Expression inherit Exp<br>
  * Two expression instead of "binary"
@@ -65,7 +63,7 @@ public class BinaryExp extends Exp{
 			Value value,
 			Hashtable<String, 
 			Integer> attrPosTable, 
-			ArrayList<Value> tuple) 
+			Tuple tuple) 
 	{
 		return visitor.visit(this, value, attrPosTable, tuple); 
 	}

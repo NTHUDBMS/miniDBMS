@@ -134,12 +134,13 @@ public class DBExecutor{
 			throws IOException, Error, ClassNotFoundException
 	{
 		Hashtable <String, Table> tables = null;
-		ArrayList <ArrayList <Value>> tupleListTemp = null;
+		TupleStack tupleStack = null;
 		Table table;
 		
 		///////////////////////////////////
 		// get table from tableFile
 		///////////////////////////////////
+		
 		File tableFile = new File(databaseDefUrl);
 		if (tableFile.exists()) {
 			tables = this.getTableDef();
@@ -151,17 +152,23 @@ public class DBExecutor{
 		// Insert into tables
 		// 	 using hash structure
 		///////////////////////////////////
+		
 		if ((table = tables.get(query.getTableName()))!= null ) { 
 			// check values integrity and input in tuple
-			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
-			tupleListTemp = this.getTupleList(query.getTableName());
+			Tuple tuple = this.convertInsertValueType(table, query.getValueList());
+			tupleStack = this.getTupleList(query.getTableName());
 			
 			// check primary key null or notRepeat
 			if (tuple != null) {
-				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleListTemp, tuple);
+				boolean checkPrimaryKeyRepeated = 
+						this.checkPrimarys(
+								table.getPrimaryList(), 
+								tupleStack, 
+								tuple
+						);
 				if (!checkPrimaryKeyRepeated) {
 					//change
-					tupleListTemp.add(tuple);
+					tupleStack.add(tuple);
 					saveColumnList(table, tuple);
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
@@ -202,7 +209,7 @@ public class DBExecutor{
 			}
 			else 
 			{
-				columnList = new ArrayList<Value>();
+				columnList = new Tuple();
 				columnList.add(tuple.get(i));
 			}
 		}
@@ -222,30 +229,30 @@ public class DBExecutor{
 		ArrayList<Attribute> attrList = table.getAttrList();
 		ArrayList <Value> columnList;
 		columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
-		ArrayList<ArrayList <Value>> tupleList = getTupleList(table.getTableName());
+		TupleStack tupleStack = getTupleList(table.getTableName());
 
 		
 		//file I/O
 		//transform all tuples into column not just one column we want
 		//then next time we can directly take from memory
-		if(columnList == null&& tupleList.size()>0)
+		if(columnList == null&& tupleStack.size()>0)
 		{
-			for(int i =0;i< tupleList.size();++i)
+			for(int i =0;i< tupleStack.size();++i)
 			{
-				ArrayList <Value> tuple = tupleList.get(i);
+				ArrayList <Value> tuple = tupleStack.get(i);
 				if(tuple!=null)
 					for(int j= 0;j< attrList.size();++j)
 					{
 						columnList = attrList.get(j).getColumnList();
 						if(columnList==null)
-							columnList = new ArrayList<Value> (); 
+							columnList = new Tuple (); 
 						columnList.add(tuple.get(j));
 					}
 			}
 			columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
 		}
 		//if can not found in file initialize here
-		else columnList = new ArrayList<Value>(); //won't pass this weird
+		else columnList = new Tuple(); //won't pass this weird
 		return columnList;
 	}
 	
@@ -261,35 +268,47 @@ public class DBExecutor{
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	private ArrayList <ArrayList <Value>>  getTupleList(String tableName) 
+	private TupleStack getTupleList(String tableName) 
 			throws ClassNotFoundException, IOException
 	{
-		ArrayList <ArrayList <Value>>  tupleListReturn = null;
+		TupleStack  tupleStackReturn = null;
+		Hashtable<String, Table> tablePool = null;
+		Table table = null;
+		File tableFile = new File(databaseDefUrl);
+		
+		//Check if database defined
+		if(tableFile.exists()){
+			tablePool = this.getTableDef();
+		}else{
+			throw new Error("SELECT: No Table Defined");
+		}
 		
 		//fetch tupleFile if still store in memroy
 		for (TupleFile temp : this.tupleFilePool) {
 			if (temp.getTableName().equals(tableName)) {
-				tupleListReturn = temp.getTupleList();
+				tupleStackReturn = temp.getTupleStack();
+				table = tablePool.get(tableName);
+				break;
 			}
 		}
 		
 		//tupleFile not in memory, fetch from HardDisk
-		if(tupleListReturn==null){
+		if(tupleStackReturn==null){
 			File tupleFile = new File(tableName + ".db");
 			if (tupleFile.exists())
 			{
-				tupleListReturn = this.getTupleList(tupleFile);
+				tupleStackReturn = this.getTupleStack(tupleFile);
 			}
 			else
 			{
 				//not exist, create new one & put into pool
-				tupleListReturn = new ArrayList <ArrayList <Value>>();
-				TupleFile newTupleFile = new TupleFile(tableName, tupleListReturn);
+				tupleStackReturn = new TupleStack(table.getAttrList());
+				
+				TupleFile newTupleFile = new TupleFile(tableName, tupleStackReturn);
 				this.tupleFilePool.add(newTupleFile);
 			}
 		}// end if tupleListReturn
-			
-		return tupleListReturn;
+		return tupleStackReturn;
 	}
 	
 	
@@ -301,18 +320,17 @@ public class DBExecutor{
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	@SuppressWarnings("unchecked")
-	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)
+	private TupleStack  getTupleStack(File tupleFile)
 			throws IOException, ClassNotFoundException
 	{
-		ArrayList <ArrayList <Value>>  tupleList = null;
+		TupleStack  tupleStack = null;
 		FileInputStream fileIn = new FileInputStream(tupleFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
-		tupleList = (ArrayList <ArrayList <Value>> ) in.readObject();
+		tupleStack = (TupleStack) in.readObject();
 		in.close();
 		fileIn.close();
 
-		return tupleList;
+		return tupleStack;
 	}
 
 	/**
@@ -326,27 +344,41 @@ public class DBExecutor{
 	 */
 	public void saveTupleList() throws ClassNotFoundException, IOException
 	{
-		ArrayList <ArrayList <Value>> tupleList= null;
+		TupleStack tupleStack= null;
 		
 		//save tuples in each table to related tupleFile
 		for (TupleFile temp : this.tupleFilePool) {
+			
+			Hashtable<String, Table> tablePool = null;
+			Table table = null;
+			File tableFile = new File(databaseDefUrl);
+			
+			//Check if database defined
+			if(tableFile.exists()){
+				tablePool = this.getTableDef();
+			}else{
+				throw new Error("SELECT: No Table Defined");
+			}
+			
 			File tupleFile = new File(temp.getTableName() + ".db");
+			table = tablePool.get(temp.getTableName());
 			if (tupleFile.exists()) {
-				tupleList = this.getTupleList(tupleFile);
-				tupleList.clear(); //see if we can not clear 
+				tupleStack = this.getTupleStack(tupleFile);
+				tupleStack.clear(); //see if we can not clear 
 			}
 			else{
-				tupleList = new ArrayList <ArrayList <Value>> ();
+				tupleStack = new TupleStack(table.getAttrList());
 			}
 			
 			//only append temp tuple list in memory
 			//so when we have multiple not continuing insert
 			// in sql, it will append the old but inserted ones
 			// solution add clear()
-			tupleList.addAll(temp.getTupleList());
+			
+			tupleStack.addAll(temp.getTupleStack());
 			
 			//store ALL inserted tupples into file
-			this.saveTupleList(tupleFile, tupleList);
+			this.saveTupleList(tupleFile, tupleStack);
 			System.out.println("TupleFile store successfully\n---------");
 		}		
 	}
@@ -354,16 +386,16 @@ public class DBExecutor{
 	/**
 	 * 
 	 * @param tupleFile 
-	 * @param tupleList
+	 * @param tupleStack
 	 * @throws IOException
 	 */
-	private void saveTupleList(File tupleFile, ArrayList <ArrayList <Value>> tupleList)throws IOException
+	private void saveTupleList(File tupleFile, TupleStack tupleStack)throws IOException
 	{
 		FileOutputStream outFile = new FileOutputStream(tupleFile);
 		ObjectOutputStream out = new ObjectOutputStream(outFile);
 		
 		//AppendingObjectOutputStream out = new AppendingObjectOutputStream(outFile);
-		out.writeObject(tupleList);
+		out.writeObject(tupleStack);
 		out.close();
 		outFile.close();
 	}
@@ -415,18 +447,12 @@ public class DBExecutor{
 		Condition selectCond = query.getCondition();
 		
 		//Hash table and arraylist to save table
-		/*
-		 * tableList : 
-		 */
 		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
-		/*
-		 * tableArrayList : 
-		 */
 		ArrayList<Table> tableArrayList = new ArrayList<Table>();
 		
 		//Hash table to save tuples for each table
-		Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashTable = 
-				new Hashtable<String, ArrayList<ArrayList<Value>> >();
+		Hashtable<String, TupleStack> tupleHashTable = 
+				new Hashtable<String, TupleStack>();
 
 		//Check if the table defined
 		for(String tableName : tableNames){
@@ -441,7 +467,7 @@ public class DBExecutor{
 			if(!tupleFile.exists()){
 				throw new Error("SELECT: No data in the table: " + tableName); 
 			}else{
-				tupleHashTable.put(tableName, this.getTupleList(tupleFile));
+				tupleHashTable.put(tableName, this.getTupleStack(tupleFile));
 			}
 		}
 
@@ -486,13 +512,14 @@ public class DBExecutor{
 					}
 	
 				}
-			}
-		}
+			}// end if normalUser
+		}// end if selectAll
+		
 		//Add condition attributes into all attributes if not added yet
 		if(conditionAttributeList != null){
-			for(String condStrAttr : conditionAttributeList){
-				if(!allAttrList.contains(condStrAttr)){
-					allAttrList.add(condStrAttr);
+			for(String attr : conditionAttributeList){
+				if(!allAttrList.contains(attr)){
+					allAttrList.add(attr);
 				}
 			}
 		}
@@ -521,7 +548,7 @@ public class DBExecutor{
 		}
 
 		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
-		TuplesWithAttrPos combinedTable = 
+		TupleStack combinedTable = 
 				this.combineTables(
 						tableArrayList, 
 						tupleHashTable, 
@@ -536,10 +563,10 @@ public class DBExecutor{
 		}
 		
 		//Obtain selected values tuples
-		TuplesWithAttrPos selectedValuesTable = null;
+		TupleStack selectedValuesTable = null;
 
 		if(!query.getSelectAll()){
-			selectedValuesTable = this.getTuplesBySelectedValue(targetAttrList, combinedTable);	
+			selectedValuesTable = this.getTuplesBySelectedColumns(targetAttrList, combinedTable);	
 		}else{
 			selectedValuesTable = combinedTable;
 		}
@@ -568,7 +595,7 @@ public class DBExecutor{
 	private void printTable(TuplesWithAttrPos tuplesTable){
 		System.out.println();
 		
-		ArrayList<ArrayList<Value>> tupleList = tuplesTable.getTupleList();
+		TupleStack tupleList = tuplesTable.getTupleStack();
 		Hashtable<String, Integer> attrPosTable = tuplesTable.getAttrPosTable();
 		if(tupleList.size()== 0){
 			throw new Error("No tuple selected");
@@ -587,7 +614,7 @@ public class DBExecutor{
 
 		System.out.println();
 
-		for(ArrayList<Value> tuple : tupleList){
+		for(Tuple tuple : tupleList){
 			for(Value value : tuple){
 				System.out.printf("%-20s", value.toString());
 			}
@@ -597,29 +624,38 @@ public class DBExecutor{
 		System.out.println(tupleList.size() + " tuples selected");
 	}
 
-	
-	private TuplesWithAttrPos getTuplesBySelectedValue(ArrayList<String> selectedList, TuplesWithAttrPos tuples){
-		Hashtable<String, Integer> nameTable = tuples.getAttrPosTable();
-		Hashtable<String, Integer> newNameTable = new Hashtable<String, Integer>();
-
-		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
-		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value> >();
-
-		int nameCount = 0;		
-		for(String selectedValue : selectedList){
-			newNameTable.put(selectedValue, nameCount);
-			nameCount++;
+	/**
+	 * Scale down original tuple by selected columns
+	 * @param selectedList
+	 * @param tupleStack
+	 * @return
+	 */
+	private TupleStack getTuplesBySelectedColumns(
+			ArrayList<String> selectedList,
+			TupleStack tupleStack)
+	{
+		ArrayList<Attribute> attrList = tupleStack.getAttrList();
+		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
+		Hashtable<String, Integer> attrPos = tupleStack.getAttrPosTable();
+		
+		// fetch select column name
+		for(String selectedColumn : selectedList){
+			newAttrList.add(attrList.get(attrPos.get(selectedColumn)));
 		}
 
-		for(ArrayList<Value> tuple : tupleList){
-			ArrayList<Value> newTuple = new ArrayList<Value>();
-			for(String selectedValue : selectedList){
-				newTuple.add(tuple.get( nameTable.get(selectedValue).intValue() ) );
+		// create new TupleStack by selected columns
+		TupleStack newTupleStack = new TupleStack(newAttrList);
+		for(Tuple tuple : tupleStack){
+			Tuple newTuple = new Tuple();
+			for(String selectedValue : selectedList)
+			{
+				// get selected column from old tuple, add to new one
+				newTuple.add(tuple.get( attrPos.get(selectedValue).intValue() ) );
 			}
-			newTupleList.add(newTuple);
+			newTupleStack.add(newTuple);
 		}
 
-		return new TuplesWithAttrPos(newNameTable, newTupleList);
+		return newTupleStack;
 
 	}
 	
@@ -629,17 +665,19 @@ public class DBExecutor{
 	 * @param tuples
 	 * @return
 	 */
-	private TuplesWithAttrPos getTuplesBySelectedCond(Condition cond, TuplesWithAttrPos tuples){
-		Hashtable<String, Integer> nameTable = tuples.getAttrPosTable();
+	private TupleStack getTuplesBySelectedCond(
+			Condition cond, 
+			TupleStack tuples)
+	{
+		Hashtable<String, Integer> attrPos = tuples.getAttrPosTable();
 
-		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
-		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value>>();
+		TupleStack newTupleList = new TupleStack();
 		
 		Exp exp = cond.getExp();
 		Object retBool;
 
-		for(ArrayList<Value> tuple : tupleList){
-			retBool = exp.accept(this, nameTable, tuple);
+		for(Tuple tuple : tuples){
+			retBool = exp.accept(this, attrPos, tuple);
 			if(retBool instanceof Boolean){
 				if( ((Boolean) retBool).booleanValue() == true){
 					newTupleList.add(tuple);
@@ -649,9 +687,9 @@ public class DBExecutor{
 			}
 
 		}
-		return new TuplesWithAttrPos(nameTable, newTupleList);
+		return newTupleList;
 	}
-	
+
 	/**
 	 * 
 	 * @param tables
@@ -661,30 +699,33 @@ public class DBExecutor{
 	 * @param isNormalUser
 	 * @return
 	 */
-	private TuplesWithAttrPos combineTables(
+	private TupleStack combineTables(
 			ArrayList<Table> tables, 
-			Hashtable<String, ArrayList<ArrayList<Value>>> tupleHashtable, 
+			Hashtable<String, TupleStack> tupleHashtable, 
 			ArrayList<String> allAttributes, 
 			boolean selectAll, 
 			boolean isNormalUser)
 	{
 
-		//ArrayList<ArrayList<Value>> combinedTupleList = new ArrayList<ArrayList<Value>>();
+		//TupleStack combinedTupleList = new TupleStack();
 		//Hashtable<String, Integer> combinedAttrNameList = new Hashtable<String, Integer>();		
  
-		LinkedList<TuplesWithAttrPos> allTables = new LinkedList<TuplesWithAttrPos>();
-
+		LinkedList<TupleStack> allTables = new LinkedList<TupleStack>();
+		ArrayList<Attribute> attrList;
+		
 		for(Table table : tables){
-			ArrayList< ArrayList<Value> > tupleList = tupleHashtable.get(table.getTableName());
+			TupleStack tupleList = tupleHashtable.get(table.getTableName());
+			attrList = table.getAttrList();
 
 			//Get a table that contains all values needed
-			TuplesWithAttrPos neededValueTable = null;
+			TupleStack neededValueTable = null;
+			
 			if(!selectAll){
 				neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 			}else{
 				//Check if it is normal user and select only subschema values
 				if(!isNormalUser){
-					neededValueTable = new TuplesWithAttrPos(table.getAttrPosHashtable(), tupleList);
+					//neededValueTable = new TupleStack(table.getAttrPosHashtable(), tupleList);
 				}else{
 					neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 				}
@@ -692,15 +733,20 @@ public class DBExecutor{
 			allTables.add(neededValueTable);
 		}
 
-
 		return cartesianProduct(allTables);
 	}
 
-	private TuplesWithAttrPos cartesianProduct(LinkedList<TuplesWithAttrPos> allTables){
+	/**
+	 * Cartesian Product<br>
+	 * 
+	 * @param allTables
+	 * @return
+	 */
+	private TupleStack cartesianProduct(LinkedList<TupleStack> allTables){
 		//LinkedList<TuplesWithNameTable> cloneAllTables = new LinkedList<TuplesWithNameTable>(allTables);
 
 		while(allTables.size() >= 2){
-			TuplesWithAttrPos combinedTable = _cartesianProduct(allTables.get(0), allTables.get(1));
+			TupleStack combinedTable = cartesianProduct(allTables.get(0), allTables.get(1));
 			allTables.removeFirst();
 			allTables.removeFirst();
 			allTables.addFirst(combinedTable);
@@ -709,62 +755,73 @@ public class DBExecutor{
 		return allTables.get(0);
 	}
 
-	private TuplesWithAttrPos _cartesianProduct(TuplesWithAttrPos table1, TuplesWithAttrPos table2){
-			Hashtable<String, Integer> nameTable;
-			ArrayList< ArrayList<Value> > tupleList;
+	
+	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2){
+		Hashtable<String, Integer> nameTable;
+		TupleStack tupleList;
 
-			nameTable = new Hashtable<String, Integer>(table1.getAttrPosTable());
-			tupleList = new ArrayList<ArrayList<Value>>();
+		nameTable = new Hashtable<String, Integer>(table1.getAttrPosTable());
+		tupleList = new TupleStack();
 
-			int table1Size = nameTable.size();
-			Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
+		int table1Size = nameTable.size();
+		Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
 
-			//Update name table position
-			for(String key : table2NameTable.keySet()){
-				nameTable.put(key, table2NameTable.get(key) + table1Size);
+		//Update name table position
+		for(String key : table2NameTable.keySet()){
+			nameTable.put(key, table2NameTable.get(key) + table1Size);
+		}
+
+		//Product table1 with table2
+		for(Tuple tuple1 : table1){
+			
+			for(Tuple tuple2 : table2){
+				Tuple combinedTuple = new Tuple(tuple1);
+				combinedTuple.addAll(tuple2);
+				tupleList.add(combinedTuple);
 			}
+		}
 
-			//Product table1 with table2
-			for(ArrayList<Value> tuple1 : table1.getTupleList()){
-				
-				for(ArrayList<Value> tuple2 : table2.getTupleList()){
-					ArrayList<Value> combinedTuple = new ArrayList<Value>(tuple1);
-					combinedTuple.addAll(tuple2);
-					tupleList.add(combinedTuple);
-				}
-			}
-
-			return new TuplesWithAttrPos(nameTable, tupleList);
-
+		return tupleList;
 	}
 
+	/**
+	 * 
+	 * @param table
+	 * @param tuples
+	 * @param allAttributes
+	 * @return
+	 */
+	private TupleStack getNeededValuesTuples(
+			Table table, 
+			TupleStack tuples, 
+			ArrayList<Attribute> allAttributes)
+	{
 
-	private TuplesWithAttrPos getNeededValuesTuples(Table table, ArrayList< ArrayList<Value> > tuples, ArrayList<String> allAttributes){
+		
+		
+		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
+		ArrayList<Integer> neededAttrPos = new ArrayList<Integer>();
 
-			ArrayList<ArrayList<Value>> newTupleList = new ArrayList<ArrayList<Value>>();
-			Hashtable<String, Integer> newAttrNamePos = new Hashtable<String, Integer>();	
-			ArrayList<Integer> neededAttrPos = new ArrayList<Integer>();
-
-			//Save all attributes positions needed
-			for(String attrName : allAttributes){
-				int attrPos;
-				if( (attrPos = table.getAttrPos(attrName)) != -1){
-					newAttrNamePos.put(attrName, neededAttrPos.size());
-					neededAttrPos.add(attrPos);
-				}
+		//Save all attributes positions needed
+		int attrPos;
+		for(Attribute attr : allAttributes){
+			if( (attrPos = table.getAttrPos(attr.getName())) != -1){
+				newAttrList.add(attr);
+				neededAttrPos.add(attrPos);
 			}
+		}
 
-
-			//Save all needed values in each tuple
-			for(ArrayList<Value> tuple : tuples){
-				ArrayList<Value> newTuple = new ArrayList<Value>();
-				for(Integer valuePos : neededAttrPos){
-					newTuple.add(tuple.get(valuePos));
-				}
-				newTupleList.add(newTuple);
+		//Save all needed values in each tuple
+		TupleStack newTupleList = new TupleStack(newAttrList);
+		for(Tuple tuple : tuples){
+			Tuple newTuple = new Tuple();
+			for(Integer valuePos : neededAttrPos){
+				newTuple.add(tuple.get(valuePos));
 			}
+			newTupleList.add(newTuple);
+		}
 
-			return new TuplesWithAttrPos(newAttrNamePos, newTupleList);
+		return newTupleList;
 	}
 
 	
@@ -779,7 +836,7 @@ public class DBExecutor{
 	 */
 	private boolean checkPrimarys(
 			ArrayList <Integer> primaryList, 
-			ArrayList <ArrayList <Value>> tupleList, 
+			TupleStack tupleList, 
 			ArrayList <Value> tuple)
 	{
 		boolean notRepeat = false;
@@ -815,9 +872,9 @@ public class DBExecutor{
 	 * @param tableDef : table from the table file
 	 * @param values : valueList from the query
 	 */
-	private ArrayList <Value> convertInsertValueType(Table table, ArrayList <String> values) throws Error
+	private Tuple convertInsertValueType(Table table, ArrayList <String> values) throws Error
 	{
-		  ArrayList <Value> valueList = new ArrayList <Value> ();
+		  Tuple tuple = new Tuple ();
 		  ArrayList <Attribute> attrList = table.getAttrList();
 		  String tableName = table.getTableName();
 		  int attrSize = attrList.size();
@@ -838,7 +895,7 @@ public class DBExecutor{
 		  		
 		  		if (type == Attribute.Type.INT) {
 		  			Value value = new Value( Integer.parseInt(strValue) );
-		  			valueList.add(value);
+		  			tuple.add(value);
 		  		}
 		  		else if(type == Attribute.Type.CHAR){
 		  			//check type and length 
@@ -846,7 +903,7 @@ public class DBExecutor{
 		  				throw new Error("INSERT: Value " + strValue + "length: "+attribute.getLength()+"<->"+strValue.length()+" mismatch");
 		  			}
 		  			Value charValue = new Value(strValue);
-		  			valueList.add(charValue);
+		  			tuple.add(charValue);
 		  		}
 		  	}
 		  	catch(NumberFormatException ex){
@@ -854,7 +911,7 @@ public class DBExecutor{
 		  	}
 
 		  }
-		  return valueList;
+		  return tuple;
 	}
 	
 	/**
@@ -928,11 +985,12 @@ public class DBExecutor{
 	 * @param tuple
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	public Object visit(
 			BinaryExp bExp, 
 			Value value, 
 			Hashtable<String, Integer> attrPosTable, 
-			ArrayList<Value> tuple)
+			Tuple tuple)
 	{
 		//System.err.println("Enter into BinaryExp ");//
 		String op = bExp.getOp();
@@ -1074,7 +1132,7 @@ public class DBExecutor{
 		}
 	}
 	
-	public Object visit(IdExp exp, Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+	public Object visit(IdExp exp, Hashtable<String, Integer> attrPosTable, Tuple tuple){
 		String attrName = exp.getId();		
 		Value value = tuple.get(attrPosTable.get(attrName).intValue());
 	
@@ -1088,7 +1146,11 @@ public class DBExecutor{
 	 * @param tuple
 	 * @return
 	 */
-	public Object visit(Exp exp,  Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
+	public Object visit(
+			Exp exp,  
+			Hashtable<String, Integer> attrPosTable, 
+			Tuple tuple)
+	{
 	
 		if(exp instanceof BinaryExp){
 			//System.err.println("Enter into visit binary");
@@ -1098,8 +1160,6 @@ public class DBExecutor{
 			return ((StrExp) exp).accept(this, null);
 		}else if(exp instanceof IdExp){
 			return ((IdExp) exp).accept(this, attrPosTable, tuple);
-		}else if(exp instanceof DoubleExp){
-			return ((DoubleExp) exp).accept(this, null);
 		}else if(exp instanceof IntExp){
 			//System.err.println("Enter into visit int");
 			return ((IntExp) exp).accept(this, null);
@@ -1109,8 +1169,16 @@ public class DBExecutor{
 	
 	}
 	
-	public Object visit(Exp exp, Value value){
-		
+	/**
+	 * 
+	 * @param exp
+	 * @param value
+	 * @return
+	 */
+	public Object visit(
+			Exp exp, 
+			Value value)
+	{
 		if(exp instanceof BinaryExp){
 			//System.err.println("Enter into visit binary");
 			return ((BinaryExp) exp).accept(this, value, null, null);
@@ -1119,8 +1187,6 @@ public class DBExecutor{
 			return ((StrExp) exp).accept(this, value);
 		}else if(exp instanceof IdExp){
 			return ((IdExp) exp).accept(this, value);
-		}else if(exp instanceof DoubleExp){
-			return ((DoubleExp) exp).accept(this, value);
 		}else if(exp instanceof IntExp){
 			//System.err.println("Enter into visit int");
 			return ((IntExp) exp).accept(this, value);
@@ -1128,6 +1194,7 @@ public class DBExecutor{
 			return Boolean.valueOf(true);
 		}
 	}
+	
 	
 	public void cleanUp(){
 		File tableFile = new File(databaseDefUrl);
@@ -1147,60 +1214,3 @@ public class DBExecutor{
 	
 }//end DBExecutor
 
-/*
-
-public void insert (Insert query)
-			throws IOException, Error, ClassNotFoundException
-	{
-		Hashtable <String, Table> tables = null;
-		//ArrayList <ArrayList <Value>> tupleList;
-		Table table;
-		
-		///////////////////////////////////
-		// get table from tableFile
-		///////////////////////////////////
-		File tableFile = new File(databaseDefUrl);
-		if (tableFile.exists()) {
-			tables = this.getTableDef();
-		}else{
-			throw new Error("INSERT: No database defined");
-		}
-		
-		///////////////////////////////////
-		// Insert into tables
-		// 	 using hash structure
-		///////////////////////////////////
-		if ((table = tables.get(query.getTableName()))!= null ) { 
-			// check values integrity and input in tuple
-			ArrayList <Value> tuple = this.convertInsertValueType(table, query.getValueList());
-			
-			// get tuple list by table name
-			File tupleFile = new File(query.getTableName() + ".db");
-			if (tupleFile.exists()) {
-				tupleList = this.getTupleList(tupleFile);
-			}
-			else{
-				tupleList = new ArrayList <ArrayList <Value>> ();
-			}
-			
-			// check primary key null or notRepeat
-			if (tupleList != null && tuple != null) {
-				
-				boolean checkPrimaryKeyRepeated = this.checkPrimarys(table.getPrimaryList(), tupleList, tuple);
-				if (!checkPrimaryKeyRepeated) {
-					tupleList.add(tuple);
-				}else{
-					throw new Error ("INSERT: primary key is notRepeat or null\n");
-				}
-			}
-			
-			//see if we can just save one tuple instead of all tuples
-			this.saveTupleList(tupleFile, tupleList);
-			System.out.println("Tuple inserted successfully\n---------");
-
-		}else{
-			throw new Error ("INSERT: No Table "+ query.getTableName() + " Found\n");
-		}
-	}
-
-*/

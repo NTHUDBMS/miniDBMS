@@ -156,7 +156,7 @@ public class Select extends Query{
 				}
 			}
 		} catch (NullPointerException e) {
-			e.printStackTrace();
+			// attrList2 is null
 		} finally{
 			if(ans)
 				return ans;

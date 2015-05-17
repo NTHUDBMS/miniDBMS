@@ -1,9 +1,8 @@
 package manageDatabase.query;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.*;
 
-import structure.Value;
+import structure.*;
 
 /**
  * 
@@ -16,7 +15,7 @@ public class TuplesWithAttrPos {
 	/**
 	 * 
 	 */
-	private ArrayList< ArrayList<Value> > tupleList;
+	private TupleStack tupleStack;
 	/**
 	 * 
 	 */
@@ -29,19 +28,19 @@ public class TuplesWithAttrPos {
 	 */
 	public TuplesWithAttrPos(
 			Hashtable<String, Integer> attrPosTable, 
-			ArrayList< ArrayList<Value> > tupleList)
+			TupleStack tupleList)
 	{
 		this.attrPosTable = attrPosTable;
-		this.tupleList = tupleList;
+		this.setTupleStack(tupleList);
 	}
 	/**
 	 * 
-	 * @param valueName
+	 * @param attributeName
 	 * @return
 	 */
-	public int getAttrPos(String valueName){
-		if(this.attrPosTable.containsKey(valueName)){
-			return this.attrPosTable.get(valueName).intValue();
+	public int getAttrPos(String attributeName){
+		if(this.attrPosTable.containsKey(attributeName)){
+			return this.attrPosTable.get(attributeName).intValue();
 		}else{
 			return -1;
 		}
@@ -58,13 +57,6 @@ public class TuplesWithAttrPos {
 	 * 
 	 * @return
 	 */
-	public ArrayList< ArrayList<Value> > getTupleList(){
-		return this.tupleList;
-	}
-	/**
-	 * 
-	 * @return
-	 */
 	public int getUpdatedTuplesNum(){
 		return this.updatedTuples;
 	}
@@ -74,6 +66,12 @@ public class TuplesWithAttrPos {
 	 */
 	public void setUpdatedTuplesNum(int num){
 		this.updatedTuples = num;
+	}
+	public TupleStack getTupleStack() {
+		return tupleStack;
+	}
+	public void setTupleStack(TupleStack tupleStack) {
+		this.tupleStack = tupleStack;
 	}
 
 }

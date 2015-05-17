@@ -6,7 +6,7 @@ package structure;
 import java.util.*;
 
 /**
- *
+ * The space to store all tuples, which have column view * row view
  */
 public class TupleStack extends ArrayList<Tuple>{
 	
@@ -29,12 +29,17 @@ public class TupleStack extends ArrayList<Tuple>{
 	/**
 	 * Data in column view
 	 */
-	private ArrayList<ArrayList<Value>> columnList;
+	private ArrayList<Columns> columnList;
 	
 	/**
 	 * Ordered attribute name of columns 
 	 */
-	private ArrayList<String> attrList;
+	private ArrayList<Attribute> attrList;
+	
+	/**
+	 * Position of attribute
+	 */
+	private Hashtable<String,Integer> attrPosTable;
 
 	/**
 	 * 
@@ -43,54 +48,81 @@ public class TupleStack extends ArrayList<Tuple>{
 	 */
 	public TupleStack(
 			ArrayList<Tuple> tupleStack,
-			ArrayList<String> attrList)
+			ArrayList<Attribute> attrList)
 	{
-		this(tupleStack);
-		this.setAttrList(attrList);
+		super(tupleStack);
+		this.setAttrList(attrList); // build attrPosTable as the same time
+		this.setColumnList(new ArrayList<Columns>());
+		this.setWidth(attrList.size());
+		this.setLength(this.size());
+	}
+	
+	/**
+	 * Normal Constructor by using super class
+	 */
+	public TupleStack(ArrayList<Attribute> attrList) {
+		super();
+		this.setAttrList(attrList); // build attrPosTable as the same time
+		this.setColumnList(new ArrayList<Columns>());
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
 	}
 	
 	
+	public TupleStack(){
+		super();
+	}
+
 	/**
-	 * Normal Constructor by using super class
-	 * @param tupleStack
+	 * 
+	 * @param columnNames
+	 * @return
 	 */
-	public TupleStack(ArrayList<Tuple> tupleStack){
-		super(tupleStack);
+	public TupleStack newStackByColumns(ArrayList<String> columnNames){
+		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
+		
+		int i=0;
+		for(Attribute a : this.attrList){
+			a.getName().equals(columnNames.get(i));
+			newAttrList.add(a);
+			i++;
+		}
+		
+		TupleStack newOne = new TupleStack(newAttrList);
+		
+		return newOne;
 	}
 	
+
 	/**
 	 * Override super method: boolean add(E e).<br>
 	 * Store tuple and insert into column view of TupleStack.<br>
 	 */
 	public boolean add(Tuple tuple){
-		boolean succeed = super.add(tuple);
+		boolean ans;
 		
 		// Insert into column view
-		
-		return succeed;
+		int i=0;
+		for(Value v : tuple){
+			if(attrList.get(i).getType() == v.getType()){
+				columnList.get(i).add(v);
+				i++;
+			}else throw new Error("INSERT: wrong data type.");
+		}
+		ans = super.add(tuple);
+		return ans;
 	}
 	
-	/**
-	 * Override super method: void add(int index, E e).<br>
-	 * Store tuple and insert into column view of TupleStack.<br>
-	 */
-	public void add(int index, Tuple tuple){
-		super.add(index, tuple);
-		
-		// Insert into column view
-		
-	}
-	
-
-	public ArrayList<String> getAttrList() {
-		return attrList;
-	}
-
-	public void setAttrList(ArrayList<String> attrList) {
-		this.attrList = attrList;
-	}
+//	/**
+//	 * Override super method: void add(int index, E e).<br>
+//	 * Store tuple and insert into column view of TupleStack.<br>
+//	 */
+//	public void add(int index, Tuple tuple){
+//		super.add(index, tuple);
+//		
+//		// Insert into column view
+//		
+//	}
 
 
 	public int getWidth() {
@@ -101,13 +133,6 @@ public class TupleStack extends ArrayList<Tuple>{
 		this.width = width;
 	}
 
-	public ArrayList<ArrayList<Value>> getColumnList() {
-		return columnList;
-	}
-
-	public void setColumnList(ArrayList<ArrayList<Value>> columnList) {
-		this.columnList = columnList;
-	}
 
 	public int getLength() {
 		return length;
@@ -116,6 +141,40 @@ public class TupleStack extends ArrayList<Tuple>{
 
 	public void setLength(int length) {
 		this.length = length;
+	}
+
+
+	public Hashtable<String,Integer> getAttrPosTable() {
+		return attrPosTable;
+	}
+
+
+	public void setAttrPosTable(Hashtable<String,Integer> attrPosTable) {
+		this.attrPosTable = attrPosTable;
+	}
+
+	public ArrayList<Attribute> getAttrList() {
+		return attrList;
+	}
+
+	public void setAttrList(ArrayList<Attribute> attrList) {
+		this.attrList = attrList;
+
+		// construct attrPosTable
+		this.attrPosTable = new Hashtable<String,Integer>();
+		int i = 0;
+		for(Attribute attr : attrList){
+			this.attrPosTable.put(attr.getName(), i);
+			i++;
+		}
+	}
+
+	public ArrayList<Columns> getColumnList() {
+		return columnList;
+	}
+
+	public void setColumnList(ArrayList<Columns> columnList) {
+		this.columnList = columnList;
 	}
 	
 	

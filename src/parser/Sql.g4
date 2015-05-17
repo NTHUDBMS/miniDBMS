@@ -14,9 +14,6 @@ import manageDatabase.query.*;
 import manageDatabase.expression.*;
 import structure.*;
 import dbms.*;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
 }
 
 @parser::members {

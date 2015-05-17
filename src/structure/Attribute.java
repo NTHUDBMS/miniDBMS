@@ -14,7 +14,10 @@ import java.util.ArrayList;
  * 
  */
 public class Attribute implements Serializable {
-private static final long serialVersionUID = 1L;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	
 	/**
 	 * The type of the data to be stored<br>

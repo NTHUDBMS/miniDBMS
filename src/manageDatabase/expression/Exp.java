@@ -1,6 +1,6 @@
 package manageDatabase.expression;
 
-import structure.Value;
+import structure.*;
 import dbms.DBExecutor;
 
 import java.util.*;
@@ -33,7 +33,7 @@ public class Exp implements java.io.Serializable{
 	public Object accept(
 			DBExecutor visitor, 
 			Hashtable<String, Integer> attrPosTable, 
-			ArrayList<Value> tuple) 
+			Tuple tuple) 
 	{
 		return visitor.visit(this, attrPosTable, tuple); 
 	}
