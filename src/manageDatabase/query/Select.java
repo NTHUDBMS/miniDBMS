@@ -1,6 +1,7 @@
 package manageDatabase.query;
 
 import java.util.*;
+
 import manageDatabase.expression.Condition;
 
 
@@ -21,19 +22,14 @@ public class Select extends Query{
 	private ArrayList<String> attrList;
 	
 	/**
-	 * Columns to be select<br>
-	 * for second table
+	 * 
 	 */
-	private ArrayList<String> attrList2;
+	private ArrayList<Integer> attrTableRelation;
 	
 	/**
 	 * target table to search<br>
 	 * tableNames[0] first<br>
 	 * tableNames[1] second<br>
-	 */
-	
-	/**
-	 * name of the table
 	 */
 	private ArrayList<String> tableNames; 
 	
@@ -62,13 +58,6 @@ public class Select extends Query{
 	}
 	
 	/**
-	 * alias hash table<br>
-	 * key: alias<br>
-	 * value: table name<br>
-	 */
-	private Hashtable<String,String> alias;
-
-	/**
 	 * <pre>
 	 * Constructor with select conditions
 	 * 2 table 2 attrlist
@@ -82,19 +71,17 @@ public class Select extends Query{
 	 */
 	public Select(
 			ArrayList<String> attrList,
-			ArrayList<String >attrList2,
+			ArrayList<Integer> attrTableRelation,
 			ArrayList<String> tableNames,
-			Condition cond,
-			Hashtable<String,String>alias) 
+			Condition cond) 
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
-		this.attrList2 = attrList2;
+		this.attrTableRelation = attrTableRelation;
 		this.cond = cond;
-		this.alias = alias;
 		this.aggregateMode = Aggregation.NON;
-		this.checkSelectAll();
+		this.isSelectAll = checkSelectAll();
 	}
 
 	/**
@@ -114,11 +101,13 @@ public class Select extends Query{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
-		this.attrList2 = null;
+		this.attrTableRelation = new ArrayList<Integer>();
+		for(int i=0; i<this.attrList.size(); i++){
+			this.attrTableRelation.add(0);
+		}
 		this.cond = cond;
-		this.alias = null;
 		this.aggregateMode = aggregateMode;
-		this.checkSelectAll();
+		this.isSelectAll = checkSelectAll();
 	}
 
 	/**
@@ -129,47 +118,14 @@ public class Select extends Query{
 	}
 
 	
-	/**
-	 * getter of columns to be selected
-	 */
-	public ArrayList<String> getAttrStrList(){
-		return this.attrList;
-	}
-	/**
-	 * getter of columns to be selected
-	 */
-	public ArrayList<String> getAttrStrList2(){
-		return this.attrList2;
-	}
-	
-
 	private boolean checkSelectAll(){
 		boolean ans = false;
-		ArrayList<String> index;
-		
-		try {
-			index = this.attrList2;
-			for(String temp : index){
-				if(temp.equals("*")){
-					ans = true;
-					break;
-				}
-			}
-		} catch (NullPointerException e) {
-			// attrList2 is null
-		} finally{
-			if(ans)
-				return ans;
-		}
-		
-		index = this.attrList;
-		for(String temp : index){
+		for(String temp : this.attrList){
 			if(temp.equals("*")){
 				ans = true;
 				break;
 			}
 		}
-		
 		return ans;
 	}
 	
@@ -208,15 +164,13 @@ public class Select extends Query{
 	}
 
 
-	public Hashtable<String,String> getAlias() {
-		return alias;
+	public ArrayList<Integer> getAttrTableRelation() {
+		return attrTableRelation;
 	}
 
-
-	public void setAlias(Hashtable<String,String> alias) {
-		this.alias = alias;
+	public void setAttrTableRelation(ArrayList<Integer> attrTableRelation) {
+		this.attrTableRelation = attrTableRelation;
 	}
-
 
 	public void setSelectAll(boolean isSelectAll) {
 		this.isSelectAll = isSelectAll;
@@ -224,6 +178,10 @@ public class Select extends Query{
 	
 	public boolean getSelectAll(){
 		return this.isSelectAll;
+	}
+
+	public ArrayList<String> getAttrList() {
+		return this.attrList;
 	}
 
 }

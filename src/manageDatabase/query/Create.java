@@ -90,7 +90,13 @@ public class Create extends Query{
 	 * @return table
 	 */
 	public Table makeTable(){
-		return new Table(this.tableName, this.attributes, this.primary, this.attrPosTable);
+		//System.out.println(this.attributes.size());
+		return new Table(
+				this.tableName, 
+				this.attributes, 
+				this.primary, 
+				this.attrPosTable
+				);
 	}
 
 	/**

@@ -3,6 +3,7 @@ package dbms;
 import java.io.*;
 import java.util.*;
 
+import parser.SqlParser;
 import manageDatabase.expression.*;
 import manageDatabase.query.*;
 import structure.*;
@@ -91,7 +92,7 @@ public class DBExecutor{
 		File tableFile = new File(databaseDefUrl);
 		
 		if (tableFile.exists()) {
-			tables = this.getTableDef();
+			tables = this.getTablePool(tableFile);
 		}else{
 			tables = new Hashtable<String, Table>();
 		}
@@ -137,21 +138,21 @@ public class DBExecutor{
 		TupleStack tupleStack = null;
 		Table table;
 		
-		///////////////////////////////////
+		///////////////////////////////////////////
 		// get table from tableFile
-		///////////////////////////////////
+		///////////////////////////////////////////
 		
 		File tableFile = new File(databaseDefUrl);
 		if (tableFile.exists()) {
-			tables = this.getTableDef();
+			tables = this.getTablePool(tableFile);
 		}else{
 			throw new Error("INSERT: No database defined");
 		}
 		
-		///////////////////////////////////
+		///////////////////////////////////////////
 		// Insert into tables
 		// 	 using hash structure
-		///////////////////////////////////
+		///////////////////////////////////////////
 		
 		if ((table = tables.get(query.getTableName()))!= null ) { 
 			// check values integrity and input in tuple
@@ -278,16 +279,17 @@ public class DBExecutor{
 		
 		//Check if database defined
 		if(tableFile.exists()){
-			tablePool = this.getTableDef();
+			tablePool = this.getTablePool(tableFile);
 		}else{
 			throw new Error("SELECT: No Table Defined");
 		}
+		
+		table = tablePool.get(tableName);
 		
 		//fetch tupleFile if still store in memroy
 		for (TupleFile temp : this.tupleFilePool) {
 			if (temp.getTableName().equals(tableName)) {
 				tupleStackReturn = temp.getTupleStack();
-				table = tablePool.get(tableName);
 				break;
 			}
 		}
@@ -355,7 +357,7 @@ public class DBExecutor{
 			
 			//Check if database defined
 			if(tableFile.exists()){
-				tablePool = this.getTableDef();
+				tablePool = this.getTablePool(tableFile);
 			}else{
 				throw new Error("SELECT: No Table Defined");
 			}
@@ -422,6 +424,7 @@ public class DBExecutor{
 		}
 	}
 
+	
 	/**
 	 * Perform the Select action of the query
 	 * @param query : the "Select_From" query
@@ -435,26 +438,35 @@ public class DBExecutor{
 		boolean isNormalUser = query.isNormalUser();
 		File tableFile = new File(databaseDefUrl);
 		
-		//Check if database defined
+		//////////////////////////////////////////
+		// Check if TablePool defined
+		//////////////////////////////////////////
+		
 		if(tableFile.exists()){
-			tablePool = this.getTableDef();
+			tablePool = this.getTablePool(tableFile);
 		}else{
 			throw new Error("SELECT: No Table Defined");
 		}
 
-		ArrayList<String> tableNames = query.getTableNames();
-		ArrayList<String> targetAttrList = query.getAttrStrList();
-		Condition selectCond = query.getCondition();
+		//////////////////////////////////////////
+		// Hash table and arrayList to save table
+		// Hash table to save tuples for each table
+		//////////////////////////////////////////
 		
-		//Hash table and arraylist to save table
-		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
-		ArrayList<Table> tableArrayList = new ArrayList<Table>();
+		Hashtable<String, Table> tableList = 
+				new Hashtable<String, Table>();
 		
-		//Hash table to save tuples for each table
+		ArrayList<Table> tableArrayList = 
+				new ArrayList<Table>();
+		
 		Hashtable<String, TupleStack> tupleHashTable = 
 				new Hashtable<String, TupleStack>();
-
-		//Check if the table defined
+		
+		//////////////////////////////////////////
+		// Check if the TupleFile defined
+		//////////////////////////////////////////
+		
+		ArrayList<String> tableNames = query.getTableNames();
 		for(String tableName : tableNames){
 			if(!tablePool.containsKey(tableName)){
 				throw new Error("SELECT: No table " + tableName + " Found");
@@ -471,37 +483,52 @@ public class DBExecutor{
 			}
 		}
 
-		//Get conditional attributes if not null
+		////////////////////////////////////////
+		// Get conditional attributes if not null
+		////////////////////////////////////////
+		
+		Condition selectCond = query.getCondition();
 		ArrayList<String> conditionAttributeList = null;
 		if(selectCond != null){
 			conditionAttributeList = selectCond.getIdList();
 		}
 
-		//Get all attributes without duplicates
+		////////////////////////////////////////
+		// Get all attributes without duplicates
+		////////////////////////////////////////
+		
+		ArrayList<String> targetAttrList = query.getAttrList();
 		ArrayList<String> allAttrList = null;
+		
+		// add attributes into "allAttrList"
 		if(query.getSelectAll()==false){
-			//if not select all, take out target attribute list
+			// If not select all, take out target attribute list
 			allAttrList = new ArrayList<String>(targetAttrList);
-
 		}else{
-			//If select all attributes
+			// If select all attributes
 			allAttrList = new ArrayList<String>();
 			
 			//Check if needs to check subschema
-			if(!isNormalUser){
+			if(isNormalUser == false){
+				// no subschema, 
 				for(String tableName : tableList.keySet()){
 					Table table = tableList.get(tableName);
-					for(Attribute attr : table.getAttrList()){
+					for(Attribute attr : table.getAttrList())
+					{
 						allAttrList.add(attr.getName());
-						
 					}
 				}
 			}else{
-				//Put all attributes in the subschema
-				for(String tableName : tableList.keySet()){
+				// Put all attributes in the subschema
+				// !!! Not using subschema
+				/*
+				for(String tableName : tableList.keySet())
+				{
 					Table table = tableList.get(tableName);
 					ArrayList<String> subSchemaList = table.getSubschemaList();
-					for(Attribute attr : table.getAttrList()){
+					
+					for(Attribute attr : table.getAttrList())
+					{
 						if(subSchemaList != null){
 							if(subSchemaList.contains(attr.getName()) != false){
 								allAttrList.add(attr.getName());
@@ -510,12 +537,17 @@ public class DBExecutor{
 							allAttrList.add(attr.getName());
 						}
 					}
-	
-				}
+				}// end fortableName
+				*/
 			}// end if normalUser
 		}// end if selectAll
 		
-		//Add condition attributes into all attributes if not added yet
+		////////////////////////////////////////
+		// Add condition attributes into 
+		//	 "allAttrList" which will be
+		//	 used at inner joint function
+		////////////////////////////////////////
+		
 		if(conditionAttributeList != null){
 			for(String attr : conditionAttributeList){
 				if(!allAttrList.contains(attr)){
@@ -523,31 +555,42 @@ public class DBExecutor{
 				}
 			}
 		}
-
-		//Check if a selected attribute or conditional attribute in the table
+		
+		////////////////////////////////////////
+		// Check if a selected attribute or 
+		//	 conditional attribute in the table
+		////////////////////////////////////////
+		
 		for(String attrName : allAttrList){
 			boolean containsAttr = false;
 			for(String tableName : tableList.keySet()){
 				Table table = tableList.get(tableName);
-				ArrayList<String> subSchemaList = table.getSubschemaList();
+				
+				//ArrayList<String> subSchemaList = table.getSubschemaList();
 
 				if(table.getAttrPos(attrName) != -1){
 					containsAttr = true;
-
+					
+					/*
 					//Check subschema for normal user
 					if(isNormalUser && subSchemaList != null){
 						if(subSchemaList.contains(attrName) == false){
 							containsAttr = false;
 						}
 					}
+					*/
 				}
 			}
 			if(containsAttr == false){
 				throw new Error("SELECT: Attribute " + attrName + " does not exists");
 			}
 		}
-
-		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
+		
+		//////////////////////////////////////////
+		// Start joining multiple tables to a single 
+		//	 table that depends on all attributes 
+		//	 needs to be in the new table
+		//////////////////////////////////////////
 		TupleStack combinedTable = 
 				this.combineTables(
 						tableArrayList, 
@@ -556,13 +599,16 @@ public class DBExecutor{
 						query.getSelectAll(), 
 						isNormalUser
 				);
-
-		//Evaluate condition
+		////////////////////////////////////////
+		// Evaluate condition
+		////////////////////////////////////////
 		if(selectCond != null){
 			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
 		}
 		
-		//Obtain selected values tuples
+		////////////////////////////////////////
+		// Obtain selected values tuples
+		////////////////////////////////////////
 		TupleStack selectedValuesTable = null;
 
 		if(!query.getSelectAll()){
@@ -584,19 +630,24 @@ public class DBExecutor{
 	 * @throws IOException
 	 */
 	public Table getTableByName(String name) throws ClassNotFoundException, IOException{
-		Hashtable<String, Table> tables = this.getTableDef();
-		return tables.get(name);
+		File tableFile = new File(databaseDefUrl);
+		Hashtable<String, Table> tablePool;
+		if(tableFile.exists()){
+			tablePool = this.getTablePool(tableFile);
+			return tablePool.get(name);
+		}
+		else return null;
+		
 	}
 
 	/**
-	 * 
-	 * @param tuplesTable
+	 * Print the table which finally match the query instruction<br>
+	 * @param tupleList 
 	 */
-	private void printTable(TuplesWithAttrPos tuplesTable){
+	private void printTable(TupleStack tupleList){
 		System.out.println();
 		
-		TupleStack tupleList = tuplesTable.getTupleStack();
-		Hashtable<String, Integer> attrPosTable = tuplesTable.getAttrPosTable();
+		Hashtable<String, Integer> attrPosTable = tupleList.getAttrPosTable();
 		if(tupleList.size()== 0){
 			throw new Error("No tuple selected");
 		}
@@ -721,13 +772,13 @@ public class DBExecutor{
 			TupleStack neededValueTable = null;
 			
 			if(!selectAll){
-				neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
+				//neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 			}else{
 				//Check if it is normal user and select only subschema values
 				if(!isNormalUser){
 					//neededValueTable = new TupleStack(table.getAttrPosHashtable(), tupleList);
 				}else{
-					neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
+					//neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 				}
 			}
 			allTables.add(neededValueTable);
@@ -923,19 +974,17 @@ public class DBExecutor{
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	private Hashtable <String, Table> getTableDef()
+	private Hashtable <String, Table> getTablePool(File tableFile)
 			throws IOException, ClassNotFoundException
 	{
-		Hashtable <String, Table> tables = null;
-		File tableFile = new File(databaseDefUrl);
-		
+		Hashtable <String, Table> tablePool = null;
 		FileInputStream fileIn = new FileInputStream(tableFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
-		tables = (Hashtable<String, Table>) in.readObject();
+		tablePool = (Hashtable<String, Table>) in.readObject();
 		in.close();
 		fileIn.close();
 
-		return tables;
+		return tablePool;
 	}
 	
 	/**

@@ -70,18 +70,23 @@ public class Table implements Serializable {
 		else
 			DBMS.outConsole("* table name null");
 		
-		if(attrList!=null)
-			this.attrList = attrList;
-		else
+		if(attrList!=null){
+			this.attrList = new ArrayList<Attribute>();
+			this.attrList.addAll(attrList);
+		}else
 			DBMS.outConsole("* attrList null");
 		
-		if(primaryList!=null)
-			this.primaryList = primaryList;
+		if(primaryList!=null){
+			this.primaryList = new ArrayList<Integer>();
+			this.primaryList.addAll(primaryList);
+		}
 		else
 			DBMS.outConsole("* primaryList null");
 		
-		if(attrPosTable!=null)
-			this.attrPosTable = attrPosTable;
+		if(attrPosTable!=null){
+			this.attrPosTable = new Hashtable<String, Integer>();
+			this.attrPosTable.putAll(attrPosTable);
+		}
 		else
 			DBMS.outConsole("* attrPosTable null");
 	}

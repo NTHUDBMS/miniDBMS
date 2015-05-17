@@ -501,8 +501,8 @@ locals [
 	  where_clause
 	{
 		// one table or two
-		ArrayList<String> attrList1 = new ArrayList<String>();
-		ArrayList<String> attrList2 = new ArrayList<String>();
+		ArrayList<String> attrList = new ArrayList<String>();
+		ArrayList<Integer> attrTableRelation = new ArrayList<Integer>();
 		
 		// collect elements, build table list
 		for(TablesContext temp : $tlist){
@@ -518,10 +518,10 @@ locals [
 		}
 		
 		// collect columns, recognize correspect table
-		int tableSelect = 0;
+		int tableSelect;
 		DBMS.outConsole("target columns:");
 		for(ColumnsContext temp : $clist){
-			
+			tableSelect = 0;
 			if(temp.col.tableName!=null){
 				// search respect table
 				if($aliasTalbe.size()!=0){ // have alias
@@ -539,25 +539,20 @@ locals [
 					tableSelect = $tableList.indexOf(temp.col.tableName);
 				}
 			}
-			switch(tableSelect){
-				case 0: // table 1
-					attrList1.add(temp.col.columnName);
-					break;
-				case 1: // table 2
-					attrList2.add(temp.col.columnName);
-					break;
-				default: // error
-					throw new Error("Error table name");
-			}
+			
+			attrList.add(temp.col.columnName);
+			attrTableRelation.add(tableSelect);
+			
 			String dumpBuffer = (temp.col.tableName!=null)?temp.col.tableName+"." :"";
-			DBMS.outConsole("\t\t"+dumpBuffer+temp.col.columnName);
+			DBMS.outConsole("\t\t"+dumpBuffer+temp.col.columnName+
+					" _table #"+Integer.toString(tableSelect)
+			);
 		}
 		$query = new Select(
-			attrList1, 
-			attrList2, 
+			attrList,
+			attrTableRelation, 
 			$tableList, 
-			$where_clause.cond,
-			$aliasTalbe
+			$where_clause.cond
 		);	
 	 
 	}
@@ -566,16 +561,16 @@ locals [
 	  where_clause
 	{
 		// only one table
-		ArrayList<String> attrList1 = new ArrayList<String>();
-		attrList1.add($column_content.value);
+		ArrayList<String> attrList = new ArrayList<String>();
+		attrList.add($column_content.value);
 		$tableList.add($tables.table.tableName);
 		
 		DBMS.outConsole("target table:\t"+$tables.table.tableName);
 		DBMS.outConsole("target columns:");
-		DBMS.outConsole("\t\t"+$column_content.value);
+		DBMS.outConsole("\t\tCOUNT("+$column_content.value+")");
 		
 		$query = new Select(
-			attrList1,
+			attrList,
 			$tableList, 
 			$where_clause.cond,
 			Select.Aggregation.COUNT
@@ -585,16 +580,16 @@ locals [
 	  FROM tables 
 	  where_clause
 	{
-		ArrayList<String> attrList1 = new ArrayList<String>();
-		attrList1.add($column_content.value);
+		ArrayList<String> attrList = new ArrayList<String>();
+		attrList.add($column_content.value);
 		$tableList.add($tables.table.tableName);
 		
 		DBMS.outConsole("target table:\t"+$tables.table.tableName);
 		DBMS.outConsole("target columns:");
-		DBMS.outConsole("\t\t"+$column_content.value);
+		DBMS.outConsole("\t\tSUM("+$column_content.value+")");
 		
 		$query = new Select(
-			attrList1,
+			attrList,
 			$tableList, 
 			$where_clause.cond,
 			Select.Aggregation.SUM

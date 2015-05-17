@@ -52,9 +52,9 @@ public class TupleStack extends ArrayList<Tuple>{
 	{
 		super(tupleStack);
 		this.setAttrList(attrList); // build attrPosTable as the same time
-		this.setColumnList(new ArrayList<Columns>());
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
+		this.setColumnList(new ArrayList<Columns>());
 	}
 	
 	/**
@@ -63,9 +63,9 @@ public class TupleStack extends ArrayList<Tuple>{
 	public TupleStack(ArrayList<Attribute> attrList) {
 		super();
 		this.setAttrList(attrList); // build attrPosTable as the same time
-		this.setColumnList(new ArrayList<Columns>());
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
+		this.setColumnList(new ArrayList<Columns>());
 	}
 	
 	
@@ -123,6 +123,19 @@ public class TupleStack extends ArrayList<Tuple>{
 //		// Insert into column view
 //		
 //	}
+	
+	/**
+	 * Override super method: E remove(int).<br>
+	 * Also remove tuple form column view
+	 */
+	public Tuple remove(int index){
+		Tuple ret = this.remove(index);
+		for(Columns c : columnList){
+			c.remove(index);
+		}
+		
+		return ret;
+	}
 
 
 	public int getWidth() {
@@ -157,6 +170,10 @@ public class TupleStack extends ArrayList<Tuple>{
 		return attrList;
 	}
 
+	/**
+	 * This method also build up attribute position table
+	 * @param attrList
+	 */
 	public void setAttrList(ArrayList<Attribute> attrList) {
 		this.attrList = attrList;
 
@@ -174,6 +191,10 @@ public class TupleStack extends ArrayList<Tuple>{
 	}
 
 	public void setColumnList(ArrayList<Columns> columnList) {
+		
+		for(int i=0; i<this.width; i++){
+			columnList.add(new Columns());
+		}
 		this.columnList = columnList;
 	}
 	
