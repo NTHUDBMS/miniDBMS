@@ -112,7 +112,7 @@ instructions @init { inValid = false;}
 	{execute($insert_into.query);}
 
 	| select_from
-	{//execute($select_from.query);
+	{execute($select_from.query);
 	}
 
 ;

@@ -3,7 +3,6 @@ package dbms;
 import java.io.*;
 import java.util.*;
 
-import parser.SqlParser;
 import manageDatabase.expression.*;
 import manageDatabase.query.*;
 import structure.*;
@@ -40,6 +39,13 @@ public class DBExecutor{
 		this.tupleFilePool = new ArrayList <TupleFile>();
 	}
 	
+	public static void pause(){
+		System.err.println("Press Enter to continue.");
+		try{
+			System.in.read();
+		}catch(Exception e){};
+	}
+	
 	/**
 	 *     While an SQL query has be parsed, DBExecutor gets
 	 * the query information and execute it.<br>
@@ -60,12 +66,19 @@ public class DBExecutor{
 			}
 			else if(query instanceof Select){
 				select((Select) query);
+				
 			}
-		}catch(IOException ex){
+		}
+//		catch(NullPointerException ex){
+//			System.err.println(ex.getMessage());
+//		}
+		catch(IOException ex){
 			System.err.println(ex.getMessage());
-		}catch(ClassNotFoundException ex){
+		}
+		catch(ClassNotFoundException ex){
 			System.err.println(ex.getMessage());
-		}catch(Error ex){
+		}
+		catch(Error ex){
 			System.err.println(ex.getMessage());
 		}
 	}
@@ -567,8 +580,9 @@ public class DBExecutor{
 				Table table = tableList.get(tableName);
 				
 				//ArrayList<String> subSchemaList = table.getSubschemaList();
-
+				
 				if(table.getAttrPos(attrName) != -1){
+					
 					containsAttr = true;
 					
 					/*
@@ -848,8 +862,6 @@ public class DBExecutor{
 			ArrayList<Attribute> allAttributes)
 	{
 
-		
-		
 		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
 		ArrayList<Integer> neededAttrPos = new ArrayList<Integer>();
 
