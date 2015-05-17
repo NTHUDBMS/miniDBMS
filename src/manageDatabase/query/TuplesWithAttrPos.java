@@ -8,11 +8,11 @@ import structure.Value;
 /**
  * 
  */
-public class TuplesWithNameTable {
+public class TuplesWithAttrPos {
 	/**
 	 * 
 	 */
-	private Hashtable<String, Integer> nameTable;
+	private Hashtable<String, Integer> attrPosTable;
 	/**
 	 * 
 	 */
@@ -23,12 +23,15 @@ public class TuplesWithNameTable {
 	private int updatedTuples = 0;
 	
 	/**
-	 * 
-	 * @param nameTable
+	 * Constructor
+	 * @param attrPosTable
 	 * @param tupleList
 	 */
-	public TuplesWithNameTable(Hashtable<String, Integer> nameTable, ArrayList< ArrayList<Value> > tupleList){
-		this.nameTable = nameTable;
+	public TuplesWithAttrPos(
+			Hashtable<String, Integer> attrPosTable, 
+			ArrayList< ArrayList<Value> > tupleList)
+	{
+		this.attrPosTable = attrPosTable;
 		this.tupleList = tupleList;
 	}
 	/**
@@ -37,8 +40,8 @@ public class TuplesWithNameTable {
 	 * @return
 	 */
 	public int getAttrPos(String valueName){
-		if(this.nameTable.containsKey(valueName)){
-			return this.nameTable.get(valueName).intValue();
+		if(this.attrPosTable.containsKey(valueName)){
+			return this.attrPosTable.get(valueName).intValue();
 		}else{
 			return -1;
 		}
@@ -48,8 +51,8 @@ public class TuplesWithNameTable {
 	 * 
 	 * @return
 	 */
-	public Hashtable<String, Integer> getNameTable(){
-		return this.nameTable;
+	public Hashtable<String, Integer> getAttrPosTable(){
+		return this.attrPosTable;
 	} 
 	/**
 	 * 

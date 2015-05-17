@@ -1,22 +1,11 @@
 package dbms;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.LinkedList;
+import java.io.*;
+import java.util.*;
 
 import manageDatabase.expression.*;
 import manageDatabase.query.*;
-import structure.Attribute;
-import structure.Table;
-import structure.TupleFile;
-import structure.Value;
+import structure.*;
 
 /**
  * This class performs the major part of DBMS.<br>
@@ -303,7 +292,7 @@ public class DBExecutor{
 		return tupleListReturn;
 	}
 	
-	@SuppressWarnings("unchecked")
+	
 	/**
 	 * get tuple from tuplefile (tupples)
 	 * used for insertion
@@ -312,6 +301,7 @@ public class DBExecutor{
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
+	@SuppressWarnings("unchecked")
 	private ArrayList <ArrayList <Value>>  getTupleList(File tupleFile)
 			throws IOException, ClassNotFoundException
 	{
@@ -425,7 +415,13 @@ public class DBExecutor{
 		Condition selectCond = query.getCondition();
 		
 		//Hash table and arraylist to save table
+		/*
+		 * tableList : 
+		 */
 		Hashtable<String, Table> tableList = new Hashtable<String, Table>();
+		/*
+		 * tableArrayList : 
+		 */
 		ArrayList<Table> tableArrayList = new ArrayList<Table>();
 		
 		//Hash table to save tuples for each table
@@ -445,10 +441,8 @@ public class DBExecutor{
 			if(!tupleFile.exists()){
 				throw new Error("SELECT: No data in the table: " + tableName); 
 			}else{
-				ArrayList< ArrayList<Value> > tupleList = this.getTupleList(tupleFile);
-				tupleHashTable.put(tableName, tupleList);
+				tupleHashTable.put(tableName, this.getTupleList(tupleFile));
 			}
-			
 		}
 
 		//Get conditional attributes if not null
@@ -476,7 +470,6 @@ public class DBExecutor{
 						
 					}
 				}
-
 			}else{
 				//Put all attributes in the subschema
 				for(String tableName : tableList.keySet()){
@@ -493,12 +486,12 @@ public class DBExecutor{
 					}
 	
 				}
-
-
 			}
-
 		}
+<<<<<<< HEAD
 		
+=======
+>>>>>>> refs/heads/melp
 		//Add condition attributes into all attributes if not added yet
 		if(conditionAttributeList != null){
 			for(String condStrAttr : conditionAttributeList){
@@ -532,7 +525,14 @@ public class DBExecutor{
 		}
 
 		//Start joining multiple tables to a single table that depends on all attributes needs to be in the new table
-		TuplesWithNameTable combinedTable = combineTables(tableArrayList, tupleHashTable, allAttrList, query.getSelectAll(), isNormalUser);
+		TuplesWithAttrPos combinedTable = 
+				this.combineTables(
+						tableArrayList, 
+						tupleHashTable, 
+						allAttrList, 
+						query.getSelectAll(), 
+						isNormalUser
+				);
 
 		//Evaluate condition
 		if(selectCond != null){
@@ -540,7 +540,7 @@ public class DBExecutor{
 		}
 		
 		//Obtain selected values tuples
-		TuplesWithNameTable selectedValuesTable = null;
+		TuplesWithAttrPos selectedValuesTable = null;
 
 		if(!query.getSelectAll()){
 			selectedValuesTable = this.getTuplesBySelectedValue(targetAttrList, combinedTable);	
@@ -565,18 +565,23 @@ public class DBExecutor{
 		return tables.get(name);
 	}
 
-	private void printTable(TuplesWithNameTable tuplesTable){
+	/**
+	 * 
+	 * @param tuplesTable
+	 */
+	private void printTable(TuplesWithAttrPos tuplesTable){
 		System.out.println();
+		
 		ArrayList<ArrayList<Value>> tupleList = tuplesTable.getTupleList();
-		Hashtable<String, Integer> nameTable = tuplesTable.getNameTable();
+		Hashtable<String, Integer> attrPosTable = tuplesTable.getAttrPosTable();
 		if(tupleList.size()== 0){
 			throw new Error("No tuple selected");
 		}
-		String[] orderedAttrNames = new String[nameTable.size()];
+		String[] orderedAttrNames = new String[attrPosTable.size()];
 
 		//Get ordered attribute names
-		for(String attrName : nameTable.keySet()){
-			orderedAttrNames[nameTable.get(attrName).intValue()] = attrName;
+		for(String attrName : attrPosTable.keySet()){
+			orderedAttrNames[attrPosTable.get(attrName).intValue()] = attrName;
 		}
 
 		//Print attribute names
@@ -597,8 +602,8 @@ public class DBExecutor{
 	}
 
 	
-	private TuplesWithNameTable getTuplesBySelectedValue(ArrayList<String> selectedList, TuplesWithNameTable tuples){
-		Hashtable<String, Integer> nameTable = tuples.getNameTable();
+	private TuplesWithAttrPos getTuplesBySelectedValue(ArrayList<String> selectedList, TuplesWithAttrPos tuples){
+		Hashtable<String, Integer> nameTable = tuples.getAttrPosTable();
 		Hashtable<String, Integer> newNameTable = new Hashtable<String, Integer>();
 
 		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
@@ -618,15 +623,21 @@ public class DBExecutor{
 			newTupleList.add(newTuple);
 		}
 
-		return new TuplesWithNameTable(newNameTable, newTupleList);
+		return new TuplesWithAttrPos(newNameTable, newTupleList);
 
 	}
 	
-	private TuplesWithNameTable getTuplesBySelectedCond(Condition cond, TuplesWithNameTable tuples){
-		Hashtable<String, Integer> nameTable = tuples.getNameTable();
+	/**
+	 * 
+	 * @param cond
+	 * @param tuples
+	 * @return
+	 */
+	private TuplesWithAttrPos getTuplesBySelectedCond(Condition cond, TuplesWithAttrPos tuples){
+		Hashtable<String, Integer> nameTable = tuples.getAttrPosTable();
 
 		ArrayList< ArrayList<Value> > tupleList = tuples.getTupleList();
-		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value> >();
+		ArrayList< ArrayList<Value> > newTupleList = new ArrayList< ArrayList<Value>>();
 		
 		Exp exp = cond.getExp();
 		Object retBool;
@@ -642,27 +653,42 @@ public class DBExecutor{
 			}
 
 		}
-		return new TuplesWithNameTable(nameTable, newTupleList);
+		return new TuplesWithAttrPos(nameTable, newTupleList);
 	}
 	
-	private TuplesWithNameTable combineTables(ArrayList<Table> tables, Hashtable<String, ArrayList< ArrayList<Value> > > tupleHashtable, ArrayList<String> allAttributes, boolean selectAll, boolean isNormalUser){
+	/**
+	 * 
+	 * @param tables
+	 * @param tupleHashtable
+	 * @param allAttributes
+	 * @param selectAll
+	 * @param isNormalUser
+	 * @return
+	 */
+	private TuplesWithAttrPos combineTables(
+			ArrayList<Table> tables, 
+			Hashtable<String, ArrayList<ArrayList<Value>>> tupleHashtable, 
+			ArrayList<String> allAttributes, 
+			boolean selectAll, 
+			boolean isNormalUser)
+	{
 
 		//ArrayList<ArrayList<Value>> combinedTupleList = new ArrayList<ArrayList<Value>>();
 		//Hashtable<String, Integer> combinedAttrNameList = new Hashtable<String, Integer>();		
  
-		LinkedList<TuplesWithNameTable> allTables = new LinkedList<TuplesWithNameTable>();
+		LinkedList<TuplesWithAttrPos> allTables = new LinkedList<TuplesWithAttrPos>();
 
 		for(Table table : tables){
 			ArrayList< ArrayList<Value> > tupleList = tupleHashtable.get(table.getTableName());
 
 			//Get a table that contains all values needed
-			TuplesWithNameTable neededValueTable = null;
+			TuplesWithAttrPos neededValueTable = null;
 			if(!selectAll){
 				neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 			}else{
 				//Check if it is normal user and select only subschema values
 				if(!isNormalUser){
-					neededValueTable = new TuplesWithNameTable(table.getAttrPosHashtable(), tupleList);
+					neededValueTable = new TuplesWithAttrPos(table.getAttrPosHashtable(), tupleList);
 				}else{
 					neededValueTable = this.getNeededValuesTuples(table, tupleList, allAttributes);
 				}
@@ -674,11 +700,11 @@ public class DBExecutor{
 		return cartesianProduct(allTables);
 	}
 
-	private TuplesWithNameTable cartesianProduct(LinkedList<TuplesWithNameTable> allTables){
+	private TuplesWithAttrPos cartesianProduct(LinkedList<TuplesWithAttrPos> allTables){
 		//LinkedList<TuplesWithNameTable> cloneAllTables = new LinkedList<TuplesWithNameTable>(allTables);
 
 		while(allTables.size() >= 2){
-			TuplesWithNameTable combinedTable = _cartesianProduct(allTables.get(0), allTables.get(1));
+			TuplesWithAttrPos combinedTable = _cartesianProduct(allTables.get(0), allTables.get(1));
 			allTables.removeFirst();
 			allTables.removeFirst();
 			allTables.addFirst(combinedTable);
@@ -687,15 +713,15 @@ public class DBExecutor{
 		return allTables.get(0);
 	}
 
-	private TuplesWithNameTable _cartesianProduct(TuplesWithNameTable table1, TuplesWithNameTable table2){
+	private TuplesWithAttrPos _cartesianProduct(TuplesWithAttrPos table1, TuplesWithAttrPos table2){
 			Hashtable<String, Integer> nameTable;
 			ArrayList< ArrayList<Value> > tupleList;
 
-			nameTable = new Hashtable<String, Integer>(table1.getNameTable());
+			nameTable = new Hashtable<String, Integer>(table1.getAttrPosTable());
 			tupleList = new ArrayList<ArrayList<Value>>();
 
 			int table1Size = nameTable.size();
-			Hashtable<String, Integer> table2NameTable = table2.getNameTable();
+			Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
 
 			//Update name table position
 			for(String key : table2NameTable.keySet()){
@@ -712,12 +738,12 @@ public class DBExecutor{
 				}
 			}
 
-			return new TuplesWithNameTable(nameTable, tupleList);
+			return new TuplesWithAttrPos(nameTable, tupleList);
 
 	}
 
 
-	private TuplesWithNameTable getNeededValuesTuples(Table table, ArrayList< ArrayList<Value> > tuples, ArrayList<String> allAttributes){
+	private TuplesWithAttrPos getNeededValuesTuples(Table table, ArrayList< ArrayList<Value> > tuples, ArrayList<String> allAttributes){
 
 			ArrayList<ArrayList<Value>> newTupleList = new ArrayList<ArrayList<Value>>();
 			Hashtable<String, Integer> newAttrNamePos = new Hashtable<String, Integer>();	
@@ -742,7 +768,7 @@ public class DBExecutor{
 				newTupleList.add(newTuple);
 			}
 
-			return new TuplesWithNameTable(newAttrNamePos, newTupleList);
+			return new TuplesWithAttrPos(newAttrNamePos, newTupleList);
 	}
 
 	
@@ -1059,6 +1085,13 @@ public class DBExecutor{
 		return visit(exp, value);
 	}
 	
+	/**
+	 * 
+	 * @param exp
+	 * @param attrPosTable
+	 * @param tuple
+	 * @return
+	 */
 	public Object visit(Exp exp,  Hashtable<String, Integer> attrPosTable, ArrayList<Value> tuple){
 	
 		if(exp instanceof BinaryExp){

@@ -62,7 +62,8 @@ public class BinaryExp extends Exp{
 	 */
 	public Object accept(
 			DBExecutor visitor,
-			Value value,Hashtable<String, 
+			Value value,
+			Hashtable<String, 
 			Integer> attrPosTable, 
 			ArrayList<Value> tuple) 
 	{
