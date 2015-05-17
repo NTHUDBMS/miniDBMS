@@ -1,7 +1,9 @@
 package manageDatabase.query;
-import java.util.*;
 
+import java.util.*;
 import manageDatabase.expression.Condition;
+
+
 /**
  * Select Inherit Query<br>
  * Realized while parsing SQL query.<br>
@@ -10,7 +12,6 @@ import manageDatabase.expression.Condition;
  * @see Query DBExecutor
  * 
  */
-
 public class Select extends Query{
 	
 	/**

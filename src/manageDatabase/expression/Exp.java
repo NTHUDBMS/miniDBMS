@@ -12,6 +12,7 @@ public class Exp implements java.io.Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = 931745767652285L;
+	
 	/**
 	 * 
 	 * @param visitor
