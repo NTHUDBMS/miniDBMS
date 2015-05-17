@@ -488,10 +488,6 @@ public class DBExecutor{
 				}
 			}
 		}
-<<<<<<< HEAD
-		
-=======
->>>>>>> refs/heads/melp
 		//Add condition attributes into all attributes if not added yet
 		if(conditionAttributeList != null){
 			for(String condStrAttr : conditionAttributeList){
