@@ -21,15 +21,16 @@ public class TupleStack extends ArrayList<Tuple>{
 	private int width;
 	
 	/**
-	 * Number of attribute
+	 * Number of tuple??
 	 */
 	private int length;
 	
 	
 	/**
 	 * Data in column view
+	 * Column is arrayList here
 	 */
-	private ArrayList<Columns> columnList;
+	private ArrayList<Column> columnList; 
 	
 	/**
 	 * Ordered attribute name of columns 
@@ -54,23 +55,24 @@ public class TupleStack extends ArrayList<Tuple>{
 		this.setAttrList(attrList); // build attrPosTable as the same time
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
-		this.setColumnList(new ArrayList<Columns>());
+		this.setColumnList(new ArrayList<Column>());
 	}
 	
 	/**
 	 * Normal Constructor by using super class
 	 */
 	public TupleStack(ArrayList<Attribute> attrList) {
-		super();
+		//it does nothing in this case?
+		super();//no-argument constructor will called 
 		this.setAttrList(attrList); // build attrPosTable as the same time
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
-		this.setColumnList(new ArrayList<Columns>());
+		this.setColumnList(new ArrayList<Column>());
 	}
 	
 	
 	public TupleStack(){
-		super();
+		super();//call arrayList<Tuple> constructor
 	}
 
 	/**
@@ -80,10 +82,11 @@ public class TupleStack extends ArrayList<Tuple>{
 	 */
 	public TupleStack newStackByColumns(ArrayList<String> columnNames){
 		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
-		
 		int i=0;
 		for(Attribute a : this.attrList){
-			a.getName().equals(columnNames.get(i));
+			//just return true or false not assign
+//			a.getName().equals(columnNames.get(i));
+			a.setName(columnNames.get(i));
 			newAttrList.add(a);
 			i++;
 		}
@@ -130,7 +133,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	 */
 	public Tuple remove(int index){
 		Tuple ret = this.remove(index);
-		for(Columns c : columnList){
+		for(Column c : columnList){
 			c.remove(index);
 		}
 		
@@ -186,14 +189,14 @@ public class TupleStack extends ArrayList<Tuple>{
 		}
 	}
 
-	public ArrayList<Columns> getColumnList() {
+	public ArrayList<Column> getColumnList() {
 		return columnList;
 	}
 
-	public void setColumnList(ArrayList<Columns> columnList) {
+	public void setColumnList(ArrayList<Column> columnList) {
 		
 		for(int i=0; i<this.width; i++){
-			columnList.add(new Columns());
+			columnList.add(new Column());
 		}
 		this.columnList = columnList;
 	}
