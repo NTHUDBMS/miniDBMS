@@ -106,6 +106,7 @@ public class DBExecutor{
 		
 		if (tableFile.exists()) {
 			tables = this.getTablePool(tableFile);
+			
 		}else{
 			tables = new Hashtable<String, Table>();
 		}
@@ -148,6 +149,7 @@ public class DBExecutor{
 			throws IOException, Error, ClassNotFoundException
 	{
 		Hashtable <String, Table> tables = null;
+		//tupleStack is used to store tuples in memory
 		TupleStack tupleStack = null;
 		Table table;
 		
@@ -157,6 +159,9 @@ public class DBExecutor{
 		
 		File tableFile = new File(databaseDefUrl);
 		if (tableFile.exists()) {
+			//get table from disk 
+			//will also get the inserted columns!! because we store 
+			//column data in attribute
 			tables = this.getTablePool(tableFile);
 		}else{
 			throw new Error("INSERT: No database defined");
@@ -182,8 +187,10 @@ public class DBExecutor{
 						);
 				if (!checkPrimaryKeyRepeated) {
 					//change
-					tupleStack.add(tuple);
-					saveColumnList(table, tuple);
+					tupleStack.add(tuple);//will also save in columns but what if
+					
+					saveColumnList(table, tuple); //... save tuple in column again = =
+					//I save column in attribute data structure
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
 				}
@@ -216,16 +223,17 @@ public class DBExecutor{
 			//check if it is already exist or still in disk
 			//or not even created
 			
-			ArrayList <Value> columnList = getColumList(table, attrList.get(i).getName());
-			if(columnList!=null)
-			{
+			ArrayList <Value> columnList = getColumn(table, attrList.get(i).getName());
+			//getCoumn won't return null
+//			if(columnList!=null)
+//			{
 				columnList.add(tuple.get(i));
-			}
-			else 
-			{
-				columnList = new Tuple();
-				columnList.add(tuple.get(i));
-			}
+//			}
+//			else 
+//			{
+//				columnList = new Tuple(); //columnList is not tuple
+//				columnList.add(tuple.get(i));
+//			}
 		}
 	}
 	
@@ -235,7 +243,7 @@ public class DBExecutor{
 	 * @throws IOException 
 	 * @throws ClassNotFoundException 
 	 */
-	private ArrayList <Value> getColumList(
+	private ArrayList <Value> getColumn(
 			Table table,
 			String attrName
 			) throws ClassNotFoundException, IOException
@@ -243,30 +251,42 @@ public class DBExecutor{
 		ArrayList<Attribute> attrList = table.getAttrList();
 		ArrayList <Value> columnList;
 		columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
-		TupleStack tupleStack = getTupleList(table.getTableName());
-
+		if(columnList ==null)
+			columnList = new ArrayList<Value>();
+		
+		//no need to do following now since we store 
+		//column data in attribute
+		//when open table file the column data
+		//will also write in memory~
 		
 		//file I/O
 		//transform all tuples into column not just one column we want
 		//then next time we can directly take from memory
-		if(columnList == null&& tupleStack.size()>0)
-		{
-			for(int i =0;i< tupleStack.size();++i)
-			{
-				ArrayList <Value> tuple = tupleStack.get(i);
-				if(tuple!=null)
-					for(int j= 0;j< attrList.size();++j)
-					{
-						columnList = attrList.get(j).getColumnList();
-						if(columnList==null)
-							columnList = new Tuple (); 
-						columnList.add(tuple.get(j));
-					}
-			}
-			columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
-		}
+//		TupleStack tupleStack = null;
+//		if(columnList ==null)
+//			//have possibility do I/O or get tupleList from memory
+//			//since it has not been transform into column yet
+//			tupleStack = getTupleList(table.getTableName()); 
+//		
+//		if(columnList == null&& tupleStack.size()>0)
+//		{
+//			for(int i =0;i< tupleStack.size();++i)
+//			{
+//				ArrayList <Value> tuple = tupleStack.get(i);
+//				if(tuple!=null)
+//					for(int j= 0;j< attrList.size();++j)
+//					{
+//						columnList = attrList.get(j).getColumnList();
+//						if(columnList==null)
+//							columnList = new Tuple (); 
+//						columnList.add(tuple.get(j));
+//					}
+//			}
+//			columnList = attrList.get(table.getAttrPos(attrName)).getColumnList();
+//		}
 		//if can not found in file initialize here
-		else columnList = new Tuple(); //won't pass this weird
+//		else columnList = new ArrayList<Value>();
+		
 		return columnList;
 	}
 	
@@ -318,7 +338,7 @@ public class DBExecutor{
 			{
 				//not exist, create new one & put into pool
 				tupleStackReturn = new TupleStack(table.getAttrList());
-				
+		
 				TupleFile newTupleFile = new TupleFile(tableName, tupleStackReturn);
 				this.tupleFilePool.add(newTupleFile);
 			}
@@ -336,7 +356,7 @@ public class DBExecutor{
 	 * @throws ClassNotFoundException
 	 */
 	private TupleStack  getTupleStack(File tupleFile)
-			throws IOException, ClassNotFoundException
+			throws IOException, ClassNotFoundException,InvalidClassException
 	{
 		TupleStack  tupleStack = null;
 		FileInputStream fileIn = new FileInputStream(tupleFile);
@@ -409,7 +429,6 @@ public class DBExecutor{
 		FileOutputStream outFile = new FileOutputStream(tupleFile);
 		ObjectOutputStream out = new ObjectOutputStream(outFile);
 		
-		//AppendingObjectOutputStream out = new AppendingObjectOutputStream(outFile);
 		out.writeObject(tupleStack);
 		out.close();
 		outFile.close();

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 /**
  * Self-defined class of an ArrayList of Value<br>
  * Add something more
+ * row view 
  */
 public class Tuple extends ArrayList<Value>{
 

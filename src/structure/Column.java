@@ -2,7 +2,7 @@ package structure;
 
 import java.util.ArrayList;
 
-public class Columns extends ArrayList<Value> {
+public class Column extends ArrayList<Value> {
 
 	/**
 	 * 

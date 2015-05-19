@@ -76,7 +76,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	}
 
 	/**
-	 * 
+	 *
 	 * @param columnNames
 	 * @return
 	 */

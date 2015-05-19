@@ -1,63 +1,17 @@
-SELECT ,bookId ,title ,pages ,authorId 
-FROMeditorial ;Book
+CREATE TABLE 
+(user1 INT PRIMARYuserId KEY,
+ VARCHARname(),
+ VARCHARuserLocation());
 
-SELECT *
-FROM ;Author
+CREATE TABLE 
+(tweets INT PRIMARYtwid KEY,
+ VARCHARtweet(),
+ VARCHARutcDate(),
+ VARCHARcity(),
+ INTuserId);
 
-SELECT  
-FROMtitle  
-WHEREBook  = ;bookId1
-
-SELECT .b 
-FROMtitle  ASBook  
-WHEREb  >  ANDpages100  =editorial ;Prentice Hall
-
-SELECT * 
-FROM  
-WHEREBook  =  ORauthorId1  <pages ;200
-
-SELECT .b* 
-FROM  ASBook ,b  ASAuthor 
-WHEREa . = . ANDbauthorIdaauthorId .a =name ;Michael Crichton
-
-SELECT ,bookId ,title ,pages  
-FROMname ,Book  
-WHEREAuthor . = .;BookauthorIdAuthorauthorId
-
-SELECT .a,name  
-FROMtitle ,Book  ASAuthor  
-WHEREa . = . ANDBookauthorIdaauthorId .Book >pages ;200
-
-SELECT .a
-FROMname  ASAuthor ,a  ASBook 
-WHEREb . = . ANDaauthorIdbauthorId .b =title ;Star Wars
-
-SELECT .a,name .b
-FROMtitle  ASAuthor ,a  ASBook 
-WHEREb . = . ANDaauthorIdbauthorId .a <>nationality ;Taiwan
-
-SELECT COUNT(*)
-FROM ;Book
-
-SELECT COUNT()editorial
-FROM ;Book
-
-SELECT COUNT(*)
-FROM 
-WHEREAuthor  = ;nationalityTaiwan
-
-SELECT SUM()pages
-FROM 
-WHEREBook  = ;authorId2
+SELECT ,userLocaiton
+FROMname ;user1
 
 SELECT 
-FROMauthorId ,Author 
-WHEREBook . = . ANDAuthorauthorIdBookauthorId .Book =title ;Star Wars
-
-SELECT *
-FROM 
-WHEREAuthor  = ;authorIdJohn
-
-SELECT .Book*
-FROM ,Book 
-WHEREAuthor . = .;BookauthorIdAuthorname
+FROMcity ;tweets
