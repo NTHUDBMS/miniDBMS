@@ -99,10 +99,10 @@ public class DBMS {
 					System.out.println("Fail to open SQL file");
 					throw new Error ("DBMS: fail to fetch the SQL queries.");
 				}
-				DBMS.executor.saveTupleList();//do file I/O
 				
 			}// end for
 			//DBMS.executor.cleanUp();
+			DBMS.executor.saveTupleList();//do file I/O
 			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");

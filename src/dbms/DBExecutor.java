@@ -361,6 +361,8 @@ public class DBExecutor{
 		TupleStack  tupleStack = null;
 		FileInputStream fileIn = new FileInputStream(tupleFile);
 		ObjectInputStream in = new ObjectInputStream(fileIn);
+//		ArrayList<Tuple> obj = (ArrayList<Tuple>) in.readObject();
+//		tupleStack = (TupleStack) in.readObject();
 		tupleStack = (TupleStack) in.readObject();
 		in.close();
 		fileIn.close();
@@ -506,13 +508,16 @@ public class DBExecutor{
 				tableList.put(tableName, tablePool.get(tableName));
 				tableArrayList.add(tablePool.get(tableName));
 			}
-
+			
+			
 			File tupleFile = new File(tableName + ".db");
 			if(!tupleFile.exists()){
 				throw new Error("SELECT: No data in the table: " + tableName); 
-			}else{
-				tupleHashTable.put(tableName, this.getTupleStack(tupleFile));
 			}
+			tupleHashTable.put(tableName,this.getTupleList(tableName));
+//			else{
+//				tupleHashTable.put(tableName, this.getTupleStack(tupleFile));
+//			}
 		}
 
 		////////////////////////////////////////

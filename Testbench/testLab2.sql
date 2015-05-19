@@ -55,4 +55,4 @@ WHERE userId = 123;
 
 SELECT user.userId, tweets.*
 FROM user1, tweets
-WHERE user1.userId = tweets.userId AND userId = 'hello'
+WHERE user1.userId = tweets.userId AND userId = 'hello';
