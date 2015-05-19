@@ -1,0 +1,3 @@
+SELECT SUM(attr4)
+FROM user1
+WHERE attr3 = 1510503 OR attr5 > 500000;
