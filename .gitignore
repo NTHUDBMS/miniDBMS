@@ -1,5 +1,9 @@
 *.class
 *.classpath
+*.dat
+*.db
+Output.txt
+
 bin/
 
 # Mobile Tools for Java (J2ME)
