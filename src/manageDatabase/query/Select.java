@@ -17,7 +17,7 @@ public class Select extends Query{
 	
 	/**
 	 * Columns to be select<br>
-	 * for first table
+	 * for all tables
 	 */
 	private ArrayList<String> attrList;
 	
@@ -33,6 +33,7 @@ public class Select extends Query{
 	 */
 	private ArrayList<String> tableNames; 
 	
+
 	/**
 	 * Conditions specified with "WHERE" command
 	 */
@@ -117,19 +118,30 @@ public class Select extends Query{
 		return this.tableNames;
 	}
 
-	
+	public int getSelectTableSize(){
+		return this.tableNames.size();
+	}
+	/**
+	 * check if Select all tables
+	 */
 	private boolean checkSelectAll(){
 		boolean ans = false;
+		int i =0;//# of *
 		for(String temp : this.attrList){
 			if(temp.equals("*")){
-				ans = true;
-				break;
+				// ans = true;
+				i++;
+				// break;
+				if (i==tableNames.size()) {
+					ans = true;
+					break;
+				}
 			}
 		}
 		return ans;
 	}
 	
-	
+
 	/**
 	 * getter of select conditions
 	 */

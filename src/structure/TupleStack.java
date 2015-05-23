@@ -21,7 +21,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	private int width;
 	
 	/**
-	 * Number of tuple??
+	 * Number of tuple
 	 */
 	private int length;
 	
@@ -36,7 +36,8 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * Ordered attribute name of columns 
 	 */
 	private ArrayList<Attribute> attrList;
-	
+	private ArrayList<String> selectattrList;
+
 	/**
 	 * Position of attribute
 	 */
@@ -62,10 +63,24 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * Normal Constructor by using super class
 	 */
 	public TupleStack(ArrayList<Attribute> attrList) {
-		//it does nothing in this case?
-		super();//no-argument constructor will called 
+		super();
 		this.setAttrList(attrList); // build attrPosTable as the same time
 		this.setWidth(attrList.size());
+		this.setLength(this.size());
+		// no need to add column view at this stage
+		// but add tuple is used this arrayList...
+		this.setColumnList(new ArrayList<Column>());
+	}
+	/**
+	 * Normal Constructor by using super class
+	 * input String attrList because of select
+	 * @param selectattrList is attrlist selected 
+	 * @param bool select is useless, distinguish constructor
+	 */
+	public TupleStack(ArrayList<String> selectattrList,boolean select) {
+		super();
+		this.setselectattrList(selectattrList); // build attrPosTable as the same time
+		this.setWidth(selectattrList.size());
 		this.setLength(this.size());
 		this.setColumnList(new ArrayList<Column>());
 	}
@@ -75,10 +90,30 @@ public class TupleStack extends ArrayList<Tuple>{
 		super();//call arrayList<Tuple> constructor
 	}
 
+
 	/**
-	 *
-	 * @param columnNames
-	 * @return
+	 * This method also build up attribute position table
+	 * @param attrList
+	 */
+	public void setAttrList(ArrayList<Attribute> attrList) {
+		this.attrList = attrList;
+
+		// construct attrPosTable
+		this.attrPosTable = new Hashtable<String,Integer>();
+		int i = 0;
+		for(Attribute attr : attrList){
+			this.attrPosTable.put(attr.getName(), i);
+			i++;
+		}
+	}
+	
+	
+	/**
+	 * set the name of each each attributes first
+	 * then construct TupleStack(ArrayList<Attribute> attrList)
+	 * 
+	 * @param list of columnNames
+	 * @return new tupleStacks
 	 */
 	public TupleStack newStackByColumns(ArrayList<String> columnNames){
 		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
@@ -107,12 +142,15 @@ public class TupleStack extends ArrayList<Tuple>{
 		// Insert into column view
 		int i=0;
 		for(Value v : tuple){
-			if(attrList.get(i).getType() == v.getType()){
-				columnList.get(i).add(v);
-				i++;
-			}else throw new Error("INSERT: wrong data type.");
+//			if(attrList.get(i).getType() == v.getType())
+			{
+//				(columnList.get(i)).add(v);
+//				i++;
+			}
+//			else throw new Error("INSERT: wrong data type.");
 		}
 		ans = super.add(tuple);
+		++this.length; //add length
 		return ans;
 	}
 	
@@ -173,18 +211,19 @@ public class TupleStack extends ArrayList<Tuple>{
 		return attrList;
 	}
 
+
 	/**
 	 * This method also build up attribute position table
 	 * @param attrList
 	 */
-	public void setAttrList(ArrayList<Attribute> attrList) {
-		this.attrList = attrList;
+	public void setselectattrList(ArrayList<String> selectattrList) {
+		this.setSelectattrList(selectattrList);
 
 		// construct attrPosTable
 		this.attrPosTable = new Hashtable<String,Integer>();
 		int i = 0;
-		for(Attribute attr : attrList){
-			this.attrPosTable.put(attr.getName(), i);
+		for(String attr : selectattrList){
+			this.attrPosTable.put(attr, i);
 			i++;
 		}
 	}
@@ -199,6 +238,14 @@ public class TupleStack extends ArrayList<Tuple>{
 			columnList.add(new Column());
 		}
 		this.columnList = columnList;
+	}
+
+	public ArrayList<String> getSelectattrList() {
+		return selectattrList;
+	}
+
+	public void setSelectattrList(ArrayList<String> selectattrList) {
+		this.selectattrList = selectattrList;
 	}
 	
 	

@@ -42,6 +42,7 @@ public static void execute(Query query){
 	}
 }   	
 
+//delete table file and tuple file
 public void endParse(){
 	this.executor.cleanUp();
 }
@@ -85,7 +86,7 @@ public class TableStruct{
 }
 
 public class ColumnStruct{
-	public String tableName;
+	public String tableName; //could be alias or table name
 	public String columnName;
 	public ColumnStruct(String tname, String cname){
 		this.tableName = tname;
@@ -485,30 +486,37 @@ select_from returns [Query query]
 locals [
 	
 	ArrayList<String> tableList, //we just have two table to compare
-	Hashtable<String,String> aliasTalbe,
+	Hashtable<String,String> aliasTable, //alias is key, table name value
 	Select.Aggregation aggregate
 ] 
 @init {
 	$tableList = new ArrayList<String> ();
-	$aliasTalbe = new Hashtable<String,String>();
+	$aliasTable = new Hashtable<String,String>();
 	$aggregate = Select.Aggregation.NON;
 }
 @after{
 	DBMS.outConsole("---------------");
 }
+//clist columnlist
+//tlist tablelist
+//clist will add structs into array, tlist will do likewise
 	: SELECT clist+=columns (COMMA clist+=columns)*
 	  FROM tlist+=tables	(COMMA tlist+=tables)*
 	  where_clause
 	{
 		// one table or two
 		ArrayList<String> attrList = new ArrayList<String>();
+		//110
+		//first attr is frm table 1
+		//third attr is frm table 0
 		ArrayList<Integer> attrTableRelation = new ArrayList<Integer>();
 		
 		// collect elements, build table list
 		for(TablesContext temp : $tlist){
 			// check alias avalible, put to hashtable
 			if(temp.table.aliasName!=null){
-				$aliasTalbe.put(
+				$aliasTable.put(
+					//from table struct
 					temp.table.aliasName, 
 					temp.table.tableName
 				);
@@ -524,9 +532,10 @@ locals [
 			tableSelect = 0;
 			if(temp.col.tableName!=null){
 				// search respect table
-				if($aliasTalbe.size()!=0){ // have alias
-					if($aliasTalbe.containsKey(temp.col.tableName)){
-						String tname = $aliasTalbe.get(temp.col.tableName);
+				if($aliasTable.size()!=0){ 
+					// have alias
+					if($aliasTable.containsKey(temp.col.tableName)){
+						String tname = $aliasTable.get(temp.col.tableName);
 						tableSelect = $tableList.indexOf(tname);
 					}
 					else
@@ -536,7 +545,8 @@ locals [
 				}
 				else // don't have alias
 				{
-					tableSelect = $tableList.indexOf(temp.col.tableName);
+					//use real name to identify table
+					tableSelect = $tableList.indexOf(temp.col.tableName); 
 				}
 			}
 			
@@ -638,12 +648,14 @@ where_clause returns [Condition cond]
 			$logical_op.text, 
 			$bool_expr2.exp
 		);
+
 		dumpWhereClause(temp);
-		System.out.print("\n");
+		DBMS.outConsole("\n");
 		$cond = new Condition(temp);
 	}
 	| WHERE bool_expr
 	{
+
 		dumpWhereClause($bool_expr.exp);
 		System.out.print("\n");
 		$cond = new Condition($bool_expr.exp);
