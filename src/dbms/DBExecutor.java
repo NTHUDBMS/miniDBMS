@@ -71,8 +71,9 @@ public class DBExecutor{
 				insert((Insert)query);
 			}
 			else if(query instanceof Select){
+				System.out.println("Start");
 				select((Select) query);
-				
+				System.out.println("Completed");
 			}
 		}
 //		catch(NullPointerException ex){
@@ -498,7 +499,7 @@ public class DBExecutor{
 					
 		File tableFile = new File(databaseDefUrl);
 		//get table from file I/O
-		if(tableFile.exists()&&selectTableInMemory == false){
+		if(selectTableInMemory == false && tableFile.exists()){
 			tablePool = this.getTablePool(tableFile);
 		}else{
 			throw new Error("SELECT: No Table Defined");
@@ -529,15 +530,14 @@ public class DBExecutor{
 				throw new Error("SELECT: No table " + tableName + " Found");
 			}else{
 				tableList.put(tableName, tablePool.get(tableName));
-				System.out.println("add table okay");
+				System.out.println("add table "+tableName+" okay");
 				tableArrayList.add(tablePool.get(tableName));
-
 			}
+			
 			
 			//get tuple file from memory first
 			//if not in memory go disk
 			//getTypleList function will serve that
-			System.out.println("debugggggg4");
 			tupleHashTable.put(tableName,this.getTupleList(tableName));
 			System.out.println("put tuplelist in select succeed");
 //			File tupleFile = new File(tableName + ".db");
@@ -550,6 +550,7 @@ public class DBExecutor{
 //			}
 		}
 //		this.getColumn(tableList.get(tableNames.get(0)), tableList.get(tableNames.get(0)).getAttrList().get(0).getName());
+		
 		////////////////////////////////////////
 		// Get conditional attributes if not null
 		////////////////////////////////////////
@@ -561,7 +562,6 @@ public class DBExecutor{
 
 		ArrayList<String> conditionAttributeList = null;
 		if(selectCond != null){
-			System.out.println("debugggggg4");
 			conditionAttributeList = selectCond.getIdList();
 		}
 		//debug
@@ -573,13 +573,10 @@ public class DBExecutor{
 		////////////////////////////////////////
 		// Get all attributes without duplicates
 		////////////////////////////////////////
-		System.out.println("debugggggg1");
 
 		ArrayList <Integer> attrTableRelation = query.getAttrTableRelation();
-		System.out.println("debugggggg2");
-
+		
 		ArrayList<String> targetAttrList = query.getAttrList();
-		System.out.println("debugggggg3");
 
 		//used to check if select or conditional attrs in tables
 		ArrayList<String> allAttrList = null;
@@ -593,20 +590,29 @@ public class DBExecutor{
 		// add attributes into "allAttrList"
 //		if(query.getSelectAll()==false){
 			// If not select all, take out target attribute list
-			allAttrList = new ArrayList<String>(targetAttrList);
+			allAttrList = new ArrayList<String>();
+			
+			//input target list attr and convert * to attrs
+			
 			for(int i =0; i<targetAttrList.size();++i)
 			{
+				//add all attrs in selected table if it's *
 				if(targetAttrList.get(i).equals("*"))
 				{
+					//get what table
 					Integer tableIndex = attrTableRelation.get(i);
 					Table temp = tableArrayList.get(tableIndex);
 					for(Attribute attr : temp.getAttrList())
 					{
 						allAttrList.add(attr.getName());
+						System.out.println("add allattrlist "+attr.getName());
 					}
 				}
 				else
+				{
 					allAttrList.add(targetAttrList.get(i));
+					System.out.println("add allattrlist "+targetAttrList.get(i));
+				}
 			}
 			
 //		}else{
@@ -641,18 +647,27 @@ public class DBExecutor{
 		//	 conditional attribute in the table
 		////////////////////////////////////////
 		
+		
 		for(String attrName : allAttrList){
+			boolean containsAttr = false;
 			for(String tableName : tableList.keySet()){
-				boolean containsAttr = false;
-				Table table = tableList.get(tableName);
-				if(table.getAttrPos(attrName) != -1|attrName.equals("*")){	
+//				Hashtable<String, Integer> attrPosTable = tableList.get(tableName).getAttrPosHashtable();
+//				for(String attr:attrPosTable.keySet())
+//				{
+//					System.out.println("debug used attr are"+attr);
+//				}
+//				for(Integer i: attrPosTable.values())
+//				{
+//					System.out.println("debug used integer are  "+i);
+//				}
+				if(tableList.get(tableName).getAttrPos(attrName) != -1|attrName.equals("*")){	
 					containsAttr = true;
 				}
-				if(containsAttr == false){
-					throw new Error("SELECT: Attribute " + attrName + " does not exists");
-				}
 			}
-			
+			if(containsAttr == false)
+			{
+				throw new Error("SELECT: Attribute " + attrName +" does not exists");
+			}			
 		}
 		
 		//////////////////////////////////////////
@@ -668,13 +683,16 @@ public class DBExecutor{
 						selectAttrList, 
 						query.getSelectAll()
 				);
-		//debug
-//		printTable(combinedTable);
-
+		
+		if(query.getCondition()==null)
+		{
+			System.out.println("print combined table now~~~~~~~~~~~~~~~~~~~~~~~~~");
+			printTable(combinedTable);
+		}
+			
 		////////////////////////////////////////
 		// Evaluate condition
 		////////////////////////////////////////
-//		if(selectCond != null){
 		
 		if(selectCond != null&&combinedTable!=null){
 			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
@@ -728,6 +746,7 @@ public class DBExecutor{
 		System.out.println("Printing table now====================");
 		
 		Hashtable<String, Integer> attrPosTable = tupleList.getAttrPosTable();
+		ArrayList<String> selectattrs = tupleList.getSelectattrList(); 
 		if(tupleList.size()== 0){
 			throw new Error("No tuple selected");
 		}
@@ -748,7 +767,7 @@ public class DBExecutor{
 //				System.out.printf("%-20s", orderedAttrNames[i]);
 //			}
 			
-			for(String attrName:attrPosTable.keySet()){
+			for(String attrName:selectattrs){
 				System.out.printf("%-20s", attrName);
 			}
 			
@@ -812,7 +831,7 @@ public class DBExecutor{
 			TupleStack tuples)
 	{
 		Hashtable<String, Integer> attrPos = null;
-		if(tuples!=null&&tuples.getAttrPosTable()!=null)
+		if(tuples!=null&&tuples.getAttrPosTable()!=null)///////////////////////////////bug here
 			attrPos = tuples.getAttrPosTable();
 		TupleStack newTupleList = new TupleStack();
 		
@@ -863,7 +882,6 @@ public class DBExecutor{
 			//Get a table that contains all values needed
 			TupleStack neededValueTable = null;
 			
-			
 			if(!selectAll){
 				 neededValueTable = this.getNeededValuesTuples(table, tupleList, selectAttrList);
 			}else{
@@ -897,20 +915,20 @@ public class DBExecutor{
 
 	
 	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2){
-		Hashtable<String, Integer> nameTable;
+		Hashtable<String, Integer> newAttrPos;
 		TupleStack tupleList;
 
-		nameTable = new Hashtable<String, Integer>(table1.getAttrPosTable());
+		newAttrPos = new Hashtable<String, Integer>(table1.getAttrPosTable());
 		tupleList = new TupleStack();
 
-		int table1Size = nameTable.size();
+		int table1Size = newAttrPos.size();
 		Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
 
 		//Update name table position
 		for(String key : table2NameTable.keySet()){
-			nameTable.put(key, table2NameTable.get(key) + table1Size);
+			newAttrPos.put(key, table2NameTable.get(key) + table1Size);
 		}
-
+		tupleList.setAttrPosTable(newAttrPos);
 		//Product table1 with table2
 		for(Tuple tuple1 : table1){
 			for(Tuple tuple2 : table2){

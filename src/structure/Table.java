@@ -129,7 +129,8 @@ public class Table implements Serializable {
 	 * @return
 	 */
 	public int getAttrPos(String valueName){
-		if(this.attrPosTable.containsKey(valueName)){
+		if(this.attrPosTable.containsKey(valueName))
+		{
 			return this.attrPosTable.get(valueName).intValue();
 		}else{
 			return -1;
