@@ -102,7 +102,7 @@ public class DBMS {
 				
 			}// end for
 			//DBMS.executor.cleanUp();
-			DBMS.executor.saveTupleList();//do file I/O
+//			DBMS.executor.saveTupleList();//do file I/O
 			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");

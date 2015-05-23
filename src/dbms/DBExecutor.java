@@ -676,18 +676,30 @@ public class DBExecutor{
 		//	 needs to be in the new table
 		// get cartesianProduct 
 		//////////////////////////////////////////
-		TupleStack combinedTable = 
+		TupleStack combinedTable;
+		if(query.getCondition()==null)
+				combinedTable = 
 				this.combineTables(
 						tableArrayList, 
 						tupleHashTable, 
 						selectAttrList, 
 						query.getSelectAll()
 				);
+		else{
+			combinedTable = 
+					this.combineTables(
+							tableArrayList, 
+							tupleHashTable, 
+							allAttrList, 
+							query.getSelectAll()
+					);
+		}
 		
 		if(query.getCondition()==null)
 		{
-			System.out.println("print combined table now~~~~~~~~~~~~~~~~~~~~~~~~~");
-			printTable(combinedTable);
+			//without condition result is here
+//			System.out.println("print combined table now~~~~~~~~~~~~~~~~~~~~~~~~~");
+//			printTable(combinedTable);
 		}
 			
 		////////////////////////////////////////
@@ -710,7 +722,7 @@ public class DBExecutor{
 			selectedValuesTable = combinedTable;
 		}
 		if(selectedValuesTable!=null)
-		printTable(selectedValuesTable);
+			printTable(selectedValuesTable);
 		else System.out.println("the selected result is empty");
 	}
 
@@ -839,7 +851,9 @@ public class DBExecutor{
 		Object retBool;
 //		if(tuples!=null&& tuples.getAttrPosTable()!=null)//debug used
 		for(Tuple tuple : tuples){
-			retBool = exp.accept(this, attrPos, tuple);
+			if(tuple.size()>=attrPos.size()) 
+				retBool = exp.accept(this, attrPos, tuple);
+			else retBool = false; 
 			if(retBool instanceof Boolean){
 				if( ((Boolean) retBool).booleanValue() == true){
 					newTupleList.add(tuple);
@@ -1242,8 +1256,20 @@ public class DBExecutor{
 	public Object visit(IdExp exp, Hashtable<String, Integer> attrPosTable, Tuple tuple){
 		String attrName = exp.getId();
 		Value value;
-//		if(!attrName.equals("*"))
-			value = tuple.get(attrPosTable.get(attrName).intValue());
+//		System.out.println("find "+attrName);
+//		
+//		for(String attr:attrPosTable.keySet())
+//		{
+//			System.out.println("debug used attr are"+attr);
+//		}
+//		for(Integer i: attrPosTable.values())
+//		{
+//			System.out.println("debug used integer are  "+i);
+//		}
+//		
+//		System.out.println("tuple size is "+tuple.size());
+		value = tuple.get(attrPosTable.get(attrName).intValue());
+//		System.out.println(value.toString()+"debug visit");
 		return visit(exp, value);
 	}
 	

@@ -1,5 +1,5 @@
 
-SELECT userLocaiton,name
+SELECT userLocation,name
 From user1;
 
 SELECT city
