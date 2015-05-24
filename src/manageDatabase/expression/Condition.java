@@ -17,7 +17,7 @@ public class Condition implements java.io.Serializable{
 	
 
 	private ArrayList<String> idList;
-	
+	private ArrayList<String> tableList;
 	/**
 	 * Constructor with expression
 	 * @param exp
@@ -38,6 +38,7 @@ public class Condition implements java.io.Serializable{
 	public ArrayList<String> getIdList(){
 //		ArrayList<String> idList = new ArrayList<String>();
 		this.idList =  new ArrayList<String>();
+		this.tableList = new ArrayList<String>();
 		getIdList(this.idList, this.exp);
 		System.out.println("final Id list size is "+ idList.size());
 		return this.idList;
@@ -53,16 +54,19 @@ public class Condition implements java.io.Serializable{
 			return;
 		//attribute
 		if(exp instanceof IdExp){
-			this.idList.add(((IdExp) exp).getId() );
+			this.idList.add(((IdExp) exp).getId());
+			this.tableList.add("");
 			System.out.println("add "+((IdExp) exp).getId() +" succeed in IdList");
 		}
 		//tableName.attribute
 		if(exp instanceof ColExp){
+			this.tableList.add(((ColExp)exp).getTableName());
 			this.idList.add(
-				((ColExp)exp).getTableName()+
-				"."+
+//				(ColExp)exp).getTableName()+
+//				"."+
 				((ColExp)exp).getColomnName()
-			);
+				)
+				;
 			System.out.println("add "+
 				((ColExp)exp).getTableName()+"."
 				+((ColExp)exp).getColomnName()+" succeed in IdList");
@@ -110,6 +114,16 @@ public class Condition implements java.io.Serializable{
 		}
 	
 		return true;
+	}
+
+
+	public ArrayList<String> getTableList() {
+		return tableList;
+	}
+
+
+	public void setTableList(ArrayList<String> tableList) {
+		this.tableList = tableList;
 	}
 
 	

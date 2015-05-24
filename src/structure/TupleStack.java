@@ -39,7 +39,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	private ArrayList<String> selectattrList;
 
 	/**
-	 * Position of attribute
+	 * Position of attribute  attribute to tableId
 	 */
 	private Hashtable<String,Integer> attrPosTable;
 
@@ -98,13 +98,13 @@ public class TupleStack extends ArrayList<Tuple>{
 	public void setAttrList(ArrayList<Attribute> attrList) {
 		this.attrList = attrList;
 
-		// construct attrPosTable
-		this.attrPosTable = new Hashtable<String,Integer>();
-		int i = 0;
-		for(Attribute attr : attrList){
-			this.attrPosTable.put(attr.getName(), i);
-			i++;
-		}
+//		 construct attrPosTable
+		 this.attrPosTable = new Hashtable<String,Integer>();
+		 int i = 0;
+		 for(Attribute attr : attrList){
+		 	this.attrPosTable.put(attr.getName(), i);
+		 	i++;
+		 }
 	}
 	
 	
@@ -218,14 +218,13 @@ public class TupleStack extends ArrayList<Tuple>{
 	 */
 	public void setselectattrList(ArrayList<String> selectattrList) {
 		this.setSelectattrList(selectattrList);
-
 		// construct attrPosTable
 		this.attrPosTable = new Hashtable<String,Integer>();
-		int i = 0;
-		for(String attr : selectattrList){
-			this.attrPosTable.put(attr, i);
-			i++;
-		}
+		 int i = 0;
+		 for(String attr : selectattrList){
+		 	this.attrPosTable.put(attr, i);
+		 	i++;
+		 }
 	}
 
 	public ArrayList<Column> getColumnList() {

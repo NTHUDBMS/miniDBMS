@@ -42,6 +42,6 @@ SELECT userId
 FROM user1, tweets
 WHERE userId = 123;
 
-SELECT user.userId, tweets.*
+SELECT user1.userId, tweets.*
 FROM user1, tweets
 WHERE user1.userId = tweets.userId AND userId = 'hello';

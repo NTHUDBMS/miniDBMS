@@ -549,6 +549,10 @@ locals [
 					tableSelect = $tableList.indexOf(temp.col.tableName); 
 				}
 			}
+			else
+			{
+				tableSelect = -1;//leave it take over on executor
+			}
 			
 			attrList.add(temp.col.columnName);
 			attrTableRelation.add(tableSelect);
@@ -648,8 +652,7 @@ where_clause returns [Condition cond]
 			$logical_op.text, 
 			$bool_expr2.exp
 		);
-
-		dumpWhereClause(temp);
+		dumpWhereClause(temp);//print condition
 		DBMS.outConsole("\n");
 		$cond = new Condition(temp);
 	}
@@ -657,7 +660,7 @@ where_clause returns [Condition cond]
 	{
 
 		dumpWhereClause($bool_expr.exp);
-		System.out.print("\n");
+		DBMS.outConsole("\n");
 		$cond = new Condition($bool_expr.exp);
 	}
 	| // empty where clause
