@@ -40,7 +40,7 @@ public class Condition implements java.io.Serializable{
 		this.idList =  new ArrayList<String>();
 		this.tableList = new ArrayList<String>();
 		getIdList(this.idList, this.exp);
-		System.out.println("final Id list size is "+ idList.size());
+//		System.out.println("final Id list size is "+ idList.size());
 		return this.idList;
 	}
 

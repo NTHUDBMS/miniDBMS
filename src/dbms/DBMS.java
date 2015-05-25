@@ -48,6 +48,7 @@ public class DBMS {
 	}
 	
     public static void main(String[] args) throws Exception {
+		long startTime = System.currentTimeMillis();
     	try{
 			os = new BufferedWriter(new FileWriter(dumpFile));
 		}catch(IOException e){
@@ -102,10 +103,13 @@ public class DBMS {
 				
 			}// end for
 			//DBMS.executor.cleanUp();
-//			DBMS.executor.saveTupleList();//do file I/O
+			DBMS.executor.saveTupleList();//do file I/O
 			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");
-		}        
+		}
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;		
+		System.out.println("Completed the execution time of all query in files is "+totalTime);
     }
 }

@@ -63,6 +63,7 @@ public class DBExecutor{
 	 */
 	public void execute(Query query)
 	{
+		long startTime = System.currentTimeMillis();
 		try{
 			if (query instanceof Create) {
 				create((Create)query);
@@ -73,7 +74,6 @@ public class DBExecutor{
 			else if(query instanceof Select){
 				System.out.println("Start");
 				select((Select) query);
-				System.out.println("Completed");
 			}
 		}
 //		catch(NullPointerException ex){
@@ -88,6 +88,9 @@ public class DBExecutor{
 		catch(Error ex){
 			System.err.println(ex.getMessage());
 		}
+		long endTime   = System.currentTimeMillis();
+		long totalTime = endTime - startTime;		
+		System.out.println("Completed the execution time of query is "+totalTime);
 	}
 
 	/**
@@ -155,23 +158,28 @@ public class DBExecutor{
 	public void insert (Insert query)
 			throws IOException, Error, ClassNotFoundException
 	{
-		Hashtable <String, Table> tables = null;
-		//tupleStack is used to store tuples in memory
-		TupleStack tupleStack = null;
-		Table table;
 		
 		///////////////////////////////////////////
 		// get table from tableFile
 		///////////////////////////////////////////
-		tables = this.tables;
-		if (tables==null)  
+		Hashtable <String, Table> tablePool = null;
+		tablePool = this.tables;
+		//search Table from Memory first
+		boolean insertTableInMemory = false;
+		String tableName = query.getTableName();
+		if(tablePool!=null&&tablePool.containsKey(tableName))
+		{
+			insertTableInMemory = true;
+		}
+		//search table from Disk
+		if (insertTableInMemory==false&&tablePool==null)  
 		{
 			File tableFile = new File(databaseDefUrl);
 			if (tableFile.exists()) {
 				//get table from disk 
 				//will also get the inserted columns!! because we store 
 				//column data in attribute
-				tables = this.getTablePool(tableFile);
+				tablePool = this.getTablePool(tableFile);
 			}else{
 				throw new Error("INSERT: No database defined");
 			}
@@ -180,8 +188,13 @@ public class DBExecutor{
 		// Insert into tables
 		// 	 using hash structure
 		///////////////////////////////////////////
+
+		//tupleStack is used to store tuples in memory
+		TupleStack tupleStack = null;
+		Table table;
 		
-		if ((table = tables.get(query.getTableName()))!= null ) { 
+		
+		if ((table = tablePool.get(query.getTableName()))!= null ) { 
 			// check values integrity and input in tuple
 			Tuple tuple = this.convertInsertValueType(table, query.getValueList());
 			tupleStack = this.getTupleList(query.getTableName());
@@ -197,8 +210,9 @@ public class DBExecutor{
 				if (!checkPrimaryKeyRepeated) {
 					//change
 					tupleStack.add(tuple);//will also save in columns but what if
-					
-					saveColumnList(table, tuple); //... save tuple in column again = =
+					//no need to save columnList now ... 
+					//can do this latter
+//					saveColumnList(table, tuple); //... save tuple in column again = =
 					//I save column in attribute data structure
 				}else{
 					throw new Error ("INSERT: primary key is notRepeat or null\n");
@@ -479,6 +493,12 @@ public class DBExecutor{
 	public void select(Select query) throws IOException, Error, ClassNotFoundException{
 		
 		
+		
+//		boolean isNormalUser = query.isNormalUser();
+
+		//////////////////////////////////////////
+		// Check if TablePool defined
+		//////////////////////////////////////////
 		Hashtable<String, Table> tablePool = null;
 		ArrayList<String> tableNames = query.getTableNames();
 		tablePool = this.tables;
@@ -490,18 +510,13 @@ public class DBExecutor{
 				}
 			}
 		else selectTableInMemory = false;
-		
-//		boolean isNormalUser = query.isNormalUser();
-		
-		//////////////////////////////////////////
-		// Check if TablePool defined
-		//////////////////////////////////////////
 					
 		File tableFile = new File(databaseDefUrl);
 		//get table from file I/O
 		if(selectTableInMemory == false && tableFile.exists()){
+//		if(tableFile.exists()){
 			tablePool = this.getTablePool(tableFile);
-		}else{
+		}else if(selectTableInMemory==false && (!tableFile.exists())){
 			throw new Error("SELECT: No Table Defined");
 		}
 
@@ -520,7 +535,6 @@ public class DBExecutor{
 				new Hashtable<String, TupleStack>();
 		
 		
-
 		//////////////////////////////////////////
 		// Check if the TupleFile defined
 		//////////////////////////////////////////
@@ -542,14 +556,6 @@ public class DBExecutor{
 			//getTypleList function will serve that
 			tupleHashTable.put(tableName,this.getTupleList(tableName));
 			System.out.println("put tuplelist in select succeed");
-//			File tupleFile = new File(tableName + ".db");
-//			if(!tupleFile.exists()){
-//				throw new Error("SELECT: No data in the table: " + tableName); 
-//			}
-			
-//			else{
-//				tupleHashTable.put(tableName, this.getTupleStack(tupleFile));
-//			}
 		}
 //		this.getColumn(tableList.get(tableNames.get(0)), tableList.get(tableNames.get(0)).getAttrList().get(0).getName());
 		
@@ -587,9 +593,6 @@ public class DBExecutor{
 		ArrayList<String> allAttrList =  new ArrayList<String>();
 		ArrayList<String> allTableList = new ArrayList<String>();
 		
-		//used for cartesianProduct 
-		ArrayList<String> selectAttrList = new ArrayList<String>();
-		ArrayList<String> selectTableList = new ArrayList<String>();
 		
 		//select all can only distinguish all tables are selected
 		//follower codes are used to add select attrs frm
@@ -627,7 +630,6 @@ public class DBExecutor{
 									tableIndex =tableArrayList.indexOf(table); 
 									findTimes++;
 								}
-
 						}
 					if(findTimes==0 | findTimes>1)
 						throw new Error("Select attribute has no responding table"
@@ -657,27 +659,25 @@ public class DBExecutor{
 				}
 			}
 		
-			
-			
+		//used for cartesianProduct 
+		ArrayList<String> selectAttrList = new ArrayList<String>();
+		ArrayList<String> selectTableList = new ArrayList<String>();
+					
 		selectAttrList.addAll(allAttrList);//used for cartesianProduct 
 		selectTableList.addAll(allTableList);//used for cartesianProduct
 
 		
 		//for ColExp
-		ArrayList <String> allAttrListWithTable = new ArrayList<String>();
-		allAttrListWithTable.addAll(allAttrList);
+//		ArrayList <String> allAttrListWithTable = new ArrayList<String>();
+//		allAttrListWithTable.addAll(allAttrList);
+		
 		////////////////////////////////////////
-		// Add condition attributes into 
+		// Add condition attributes into
+		// After here allAttrList could have element like Table.attr
 		//	 "allAttrList" which will be
 		//	 used at inner joint function
 		////////////////////////////////////////
 		if(conditionAttributeList != null){
-//			for(String attr : conditionAttributeList){
-//				System.out.println("add AllattrList of cond " + attr);
-//				if(!allAttrList.contains(attr)){
-//					allAttrList.add(attr);
-//				}
-//			}
 			for(int i =0; i<conditionAttributeList.size();++i)
 			{
 				String inputAttr = conditionAttributeList.get(i);
@@ -695,15 +695,17 @@ public class DBExecutor{
 							//can be set to TAble.attr
 							//then it will be compared IdExp with ColExp
 							//still fine
-							allAttrListWithTable.set(j, inputTableName+"."+inputAttr);
+//							allAttrListWithTable.set(j, inputTableName+"."+inputAttr);
+							allAttrList.set(j, inputTableName+"."+inputAttr);
+							
 						}
 				}
 				if(alreadyContain ==false){
 					//for the need of col condition
-					allAttrList.add(inputAttr);
 					if(conditionTableList.get(i)=="")
 					{
-						allAttrListWithTable.add(inputAttr);
+						allAttrList.add(inputAttr);						
+//						allAttrListWithTable.add(inputAttr);
 						//find which table for this condition attr
 						int findTimes =0;
 						for(String tableName: tableList.keySet())
@@ -723,7 +725,9 @@ public class DBExecutor{
 						{
 							allTableList.add(inputTableName);
 							//for ColExp
-							allAttrListWithTable.add(inputTableName+"."+inputAttr);
+//							allAttrListWithTable.add(inputTableName+"."+inputAttr);
+							allAttrList.add(inputTableName+"."+inputAttr);
+							
 						}
 				}
 				
@@ -740,7 +744,11 @@ public class DBExecutor{
 			String attrName = allAttrList.get(i);
 			String tableName = allTableList.get(i);
 			boolean containsAttr = false;
-
+			if(attrName.contains(".")==true)
+			{
+				String[] split = attrName.split("\\.");
+				attrName = split[1];
+			}
 			if(tableList.get(tableName).getAttrPos(attrName) != -1|attrName.equals("*")){	
 				containsAttr = true;
 			}
@@ -771,8 +779,8 @@ public class DBExecutor{
 					this.combineTables(
 							tableArrayList, 
 							tupleHashTable, 
-//							allAttrList,
-							allAttrListWithTable,
+							allAttrList,
+//							allAttrListWithTable,
 							allTableList,
 							query.getSelectAll()
 					);
@@ -803,7 +811,9 @@ public class DBExecutor{
 
 //		if(!query.getSelectAll()){
 //		selectedValuesTable = combinedTable;//with out selected
-		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList, selectAttrList, combinedTable);	
+		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList,
+															  selectAttrList, 
+															  combinedTable);	
 //		}else{
 //			selectedValuesTable = combinedTable;
 //		}
@@ -889,7 +899,7 @@ public class DBExecutor{
 			}
 			System.out.println();
 		}
-
+		
 		System.out.println(tupleList.size() + " tuples selected");
 		
 	}
@@ -939,7 +949,7 @@ public class DBExecutor{
 			{
 				// get selected column from old tuple, add to new one
 //					tuple.remove(i);
-					newOne.add(tuple.get(saveIndex.get(i)));
+				newOne.add(tuple.get(saveIndex.get(i)));
 			}
 			newTupleList.add(newOne);
 		}
@@ -1065,13 +1075,6 @@ public class DBExecutor{
 		newSelectAttrs.addAll(table2.getSelectattrList());
 		tupleList.setselectattrList(newSelectAttrs);
 		
-		
-		//set selectattrListWithTable
-//		ArrayList<String> newSelectAttrsWithTable = new ArrayList<String>();
-//		newSelectAttrsWithTable.addAll(table1.getSelectattrListWithTable());
-//		newSelectAttrsWithTable.addAll(table2.getSelectattrListWithTable());
-//		tupleList.setSelectattrListWithTable(newSelectAttrsWithTable);
-//		
 		//Product table1 with table2
 		for(Tuple tuple1 : table1){
 			for(Tuple tuple2 : table2){
