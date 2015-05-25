@@ -1,5 +1,8 @@
 package manageDatabase.expression;
 
+import java.util.Hashtable;
+
+import structure.Tuple;
 import structure.Value;
 import dbms.DBExecutor;
 
@@ -40,6 +43,12 @@ public class ColExp extends Exp{
 		return visitor.visit(this, value); 
 	}
 
-
+	public Object accept(
+			DBExecutor visitor, 
+			Hashtable<String, Integer> attrPosTable, 
+			Tuple tuple) 
+	{
+		return visitor.visit(this, attrPosTable, tuple); 
+	}
 
 }

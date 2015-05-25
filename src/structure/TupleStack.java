@@ -37,6 +37,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	 */
 	private ArrayList<Attribute> attrList;
 	private ArrayList<String> selectattrList;
+	private ArrayList<String> selectattrListWithTable;
 
 	/**
 	 * Position of attribute  attribute to tableId
@@ -245,6 +246,14 @@ public class TupleStack extends ArrayList<Tuple>{
 
 	public void setSelectattrList(ArrayList<String> selectattrList) {
 		this.selectattrList = selectattrList;
+	}
+
+	public ArrayList<String> getSelectattrListWithTable() {
+		return selectattrListWithTable;
+	}
+
+	public void setSelectattrListWithTable(ArrayList<String> selectattrListWithTable) {
+		this.selectattrListWithTable = selectattrListWithTable;
 	}
 	
 	

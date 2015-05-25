@@ -62,8 +62,8 @@ public class Condition implements java.io.Serializable{
 		if(exp instanceof ColExp){
 			this.tableList.add(((ColExp)exp).getTableName());
 			this.idList.add(
-//				(ColExp)exp).getTableName()+
-//				"."+
+				// (ColExp)exp).getTableName()+
+				// "."+
 				((ColExp)exp).getColomnName()
 				)
 				;

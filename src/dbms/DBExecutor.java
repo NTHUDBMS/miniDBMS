@@ -659,12 +659,15 @@ public class DBExecutor{
 		selectAttrList.addAll(allAttrList);//used for cartesianProduct 
 		selectTableList.addAll(allTableList);
 
+		
+		//for ColExp
+		ArrayList <String> allAttrListWithTable = new ArrayList<String>();
+		allAttrListWithTable.addAll(allAttrList);
 		////////////////////////////////////////
 		// Add condition attributes into 
 		//	 "allAttrList" which will be
 		//	 used at inner joint function
 		////////////////////////////////////////
-		
 		if(conditionAttributeList != null){
 //			for(String attr : conditionAttributeList){
 //				System.out.println("add AllattrList of cond " + attr);
@@ -676,17 +679,28 @@ public class DBExecutor{
 			{
 				String inputAttr = conditionAttributeList.get(i);
 				String inputTableName =conditionTableList.get(i);
-				boolean contain = false;
+				boolean alreadyContain = false;
+				//check if attrs in condition already selected
 				for(int j =0;j<allTableList.size();++j)
 				{
 					if(allTableList.get(j).equals(inputTableName)
 					&& allAttrList.get(j).equals(inputAttr))
-						contain = true;
+						{
+							alreadyContain = true;
+							//for ColExp
+							//no need to the other one
+							//can be set to TAble.attr
+							//then it will be compared IdExp with ColExp
+							//still fine
+							allAttrListWithTable.set(j, inputTableName+"."+inputAttr);
+						}
 				}
-				if(contain ==false){
+				if(alreadyContain ==false){
+					//for the need of col condition
 					allAttrList.add(inputAttr);
 					if(conditionTableList.get(i)=="")
 					{
+						allAttrListWithTable.add(inputAttr);
 						//find which table for this condition attr
 						int findTimes =0;
 						for(String tableName: tableList.keySet())
@@ -703,7 +717,11 @@ public class DBExecutor{
 									+ " or can specify in which tables");
 					}
 					else
-						allTableList.add(inputTableName);
+						{
+							allTableList.add(inputTableName);
+							//for ColExp
+							allAttrListWithTable.add(inputTableName+"."+inputAttr);
+						}
 				}
 				
 			}
@@ -719,20 +737,10 @@ public class DBExecutor{
 			String attrName = allAttrList.get(i);
 			String tableName = allTableList.get(i);
 			boolean containsAttr = false;
-//			for(String tableName : tableList.keySet()){
-//				Hashtable<String, Integer> attrPosTable = tableList.get(tableName).getAttrPosHashtable();
-//				for(String attr:attrPosTable.keySet())
-//				{
-//					System.out.println("debug used attr are"+attr);
-//				}
-//				for(Integer i: attrPosTable.values())
-//				{
-//					System.out.println("debug used integer are  "+i);
-//				}
-				if(tableList.get(tableName).getAttrPos(attrName) != -1|attrName.equals("*")){	
-					containsAttr = true;
-				}
-//			}
+
+			if(tableList.get(tableName).getAttrPos(attrName) != -1|attrName.equals("*")){	
+				containsAttr = true;
+			}
 			if(containsAttr == false)
 			{
 				throw new Error("SELECT: Attribute " + attrName +" does not exists");
@@ -760,12 +768,16 @@ public class DBExecutor{
 					this.combineTables(
 							tableArrayList, 
 							tupleHashTable, 
-							allAttrList,
+//							allAttrList,
+							allAttrListWithTable,
 							allTableList,
 							query.getSelectAll()
 					);
 		}
 		
+//			System.out.println("debugggggggggggggggggggg!!~~~");
+//			printTable(combinedTable);
+
 		if(query.getCondition()==null)
 		{
 //			without condition result is here
@@ -916,8 +928,12 @@ public class DBExecutor{
 	{
 		Hashtable<String, Integer> attrPos = null;
 		TupleStack newTupleList = new TupleStack(tuples.getSelectattrList(),true);
-		if(tuples!=null&&tuples.getAttrPosTable()!=null)///////////////////////////////bug here
-			attrPos = tuples.getAttrPosTable();
+//		if(tuples.getSelectattrListWithTable()!=null)
+//			newTupleList = new TupleStack(tuples.getSelectattrListWithTable(),true);
+//		if(tuples!=null&&tuples.getAttrPosTable()!=null)///////////////////////////////bug here
+//			attrPos = tuples.getAttrPosTable();
+		if(newTupleList!=null)
+			attrPos = newTupleList.getAttrPosTable();
 		Exp exp = cond.getExp();
 		Object retBool;
 //		if(tuples!=null&& tuples.getAttrPosTable()!=null)//debug used
@@ -932,7 +948,6 @@ public class DBExecutor{
 			}else{
 				throw new Error("SELECT: Tuple select condition evaluation failed");
 			}
-
 		}
 		return newTupleList;
 	}
@@ -1019,6 +1034,14 @@ public class DBExecutor{
 		newSelectAttrs.addAll(table1.getSelectattrList());
 		newSelectAttrs.addAll(table2.getSelectattrList());
 		tupleList.setselectattrList(newSelectAttrs);
+		
+		
+		//set selectattrListWithTable
+//		ArrayList<String> newSelectAttrsWithTable = new ArrayList<String>();
+//		newSelectAttrsWithTable.addAll(table1.getSelectattrListWithTable());
+//		newSelectAttrsWithTable.addAll(table2.getSelectattrListWithTable());
+//		tupleList.setSelectattrListWithTable(newSelectAttrsWithTable);
+//		
 		//Product table1 with table2
 		for(Tuple tuple1 : table1){
 			for(Tuple tuple2 : table2){
@@ -1050,13 +1073,28 @@ public class DBExecutor{
 		//then we know which index in tuple 
 		//we want to insert into the new tuple
 		ArrayList<Integer> neededAttrPos = new ArrayList<Integer>();
-
+		
 		//Save all attributes positions needed
 		for(int i=0;i<selectAttrList.size();i++)
 		{
 			int attrPos;
 			String attr = selectAttrList.get(i);
-			if(selectTableList.get(i).equals(table.getTableName())
+			//for ColExp
+			if(attr.contains(".")==true)
+			{
+				String []parts = attr.split("\\.");
+//				System.out.println("this attr is bug" +attr);
+				attr = parts[1];
+				if(selectTableList.get(i).equals(table.getTableName())
+						   &&(attrPos = table.getAttrPos(attr)) != -1
+						  )
+				{
+					newAttrList.add(table.getTableName()+"."+attr);
+					neededAttrPos.add(attrPos);
+				}
+				
+			}
+			else if(selectTableList.get(i).equals(table.getTableName())
 			   &&(attrPos = table.getAttrPos(attr)) != -1
 			  )
 			{
@@ -1068,6 +1106,9 @@ public class DBExecutor{
 		//will set attrlistPos 
 		//important to be used in condition checking
 		TupleStack newTupleList = new TupleStack(newAttrList,true);
+		
+		
+//		newTupleList.setSelectattrListWithTable(newAttrListWithTable);
 		//Save all needed values in each tuple
 		for(Tuple tuple : tuples){
 			Tuple newTuple = new Tuple();
@@ -1076,7 +1117,6 @@ public class DBExecutor{
 			}
 			newTupleList.add(newTuple);
 		}
-
 		return newTupleList;
 	}
 
@@ -1254,7 +1294,10 @@ public class DBExecutor{
 			return ((StrExp) exp).accept(this, null);
 		}else if(exp instanceof IdExp){
 			return ((IdExp) exp).accept(this, attrPosTable, tuple);
-		}else if(exp instanceof IntExp){
+		}else if(exp instanceof ColExp){
+			return ((ColExp) exp).accept(this, attrPosTable, tuple);
+		}
+		else if(exp instanceof IntExp){
 			//System.err.println("Enter into visit int");
 			return ((IntExp) exp).accept(this, null);
 		}else{
@@ -1281,6 +1324,8 @@ public class DBExecutor{
 			return ((StrExp) exp).accept(this, value);
 		}else if(exp instanceof IdExp){
 			return ((IdExp) exp).accept(this, value);
+		}else if(exp instanceof ColExp){
+			return ((ColExp) exp).accept(this, value);
 		}else if(exp instanceof IntExp){
 			//System.err.println("Enter into visit int");
 			return ((IntExp) exp).accept(this, value);
@@ -1339,23 +1384,43 @@ public class DBExecutor{
 	public Object visit(IdExp exp, Hashtable<String, Integer> attrPosTable, Tuple tuple){
 		String attrName = exp.getId();
 		Value value;
-//		System.out.println("find "+attrName);
-//		
-//		for(String attr:attrPosTable.keySet())
-//		{
-//			System.out.println("debug used attr are"+attr);
-//		}
-//		for(Integer i: attrPosTable.values())
-//		{
-//			System.out.println("debug used integer are  "+i);
-//		}
-//		
-//		System.out.println("tuple size is "+tuple.size());
 		value = tuple.get(attrPosTable.get(attrName).intValue());
-//		System.out.println(value.toString()+"debug visit");
 		return visit(exp, value);
 	}
 	
+	/**
+	 * called by ColExp accept
+	 * @param exp
+	 * @param value
+	 * @return
+	 */
+	public Object visit(ColExp exp, Value value){
+		//System.err.println("Enter into idExp");
+		if(value.getType() == Attribute.Type.INT){
+			return Integer.valueOf(value.getInt());
+		}
+		else if(value.getType() == Attribute.Type.CHAR){
+			return value.getChar();
+		}else{
+			throw new Error("ColExp error");
+		}
+	}
+	/**
+	 * also called by ColExp
+	 * @param exp
+	 * @param attrPosTable
+	 * @param tuple
+	 * @return
+	 */
+	public Object visit(ColExp exp, Hashtable<String, Integer> attrPosTable, Tuple tuple){
+		String attrName = exp.getColomnName();
+		Value value;
+		 // value = tuple.get(attrPosTable.get(attrName).intValue());
+		value = tuple.get(attrPosTable.get(exp.getTableName()+"."+attrName).intValue());
+		if(value ==null)
+			value = tuple.get(attrPosTable.get(attrName).intValue());
+		return visit(exp, value);
+	}
 	
 	
 	/**
@@ -1432,7 +1497,7 @@ public class DBExecutor{
 	       		 } else if (op.equals("<=")) {
 	            		ret = (l <= r);
 	        		} else if (op.equals("=")) {
-	           			ret = (l == r);
+	        			ret = (l == r);
 	        		} else if (op.equals("!=")) {
 	            		ret = (l != r);
 	        		} else if (op.equals(">")) {
