@@ -56,7 +56,7 @@ public class Condition implements java.io.Serializable{
 		if(exp instanceof IdExp){
 			this.idList.add(((IdExp) exp).getId());
 			this.tableList.add("");
-			System.out.println("add "+((IdExp) exp).getId() +" succeed in IdList");
+//			System.out.println("add "+((IdExp) exp).getId() +" succeed in IdList");
 		}
 		//tableName.attribute
 		if(exp instanceof ColExp){
@@ -67,9 +67,9 @@ public class Condition implements java.io.Serializable{
 				((ColExp)exp).getColomnName()
 				)
 				;
-			System.out.println("add "+
-				((ColExp)exp).getTableName()+"."
-				+((ColExp)exp).getColomnName()+" succeed in IdList");
+//			System.out.println("add "+
+//				((ColExp)exp).getTableName()+"."
+//				+((ColExp)exp).getColomnName()+" succeed in IdList");
 		}
 		
 		if(exp instanceof BinaryExp){

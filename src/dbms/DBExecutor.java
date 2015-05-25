@@ -586,6 +586,7 @@ public class DBExecutor{
 		//used to check if select or conditional attrs in tables
 		ArrayList<String> allAttrList =  new ArrayList<String>();
 		ArrayList<String> allTableList = new ArrayList<String>();
+		
 		//used for cartesianProduct 
 		ArrayList<String> selectAttrList = new ArrayList<String>();
 		ArrayList<String> selectTableList = new ArrayList<String>();
@@ -634,7 +635,7 @@ public class DBExecutor{
 					else attrTableRelation.set(i, tableIndex); //reset the related table
 				}
 				//debug
-				System.out.println("table Index ix " + tableIndex+ " attribute is " +targetAttrList.get(i));
+//				System.out.println("table Index is " + tableIndex+ " attribute is " +targetAttrList.get(i));
 				Table temp = tableArrayList.get(tableIndex);
 				//add all attrs in selected table if it's *
 				if(selectAttr.equals("*"))
@@ -645,19 +646,21 @@ public class DBExecutor{
 						//adding specify table
 						allTableList.add(temp.getTableName());
 						allAttrList.add(attr.getName());
-						System.out.println("add allattrlist of select"+attr.getName());
+//						System.out.println("add allattrlist of select"+attr.getName());
 					}
 				}
 				else
 				{
 					allTableList.add(temp.getTableName());
 					allAttrList.add(targetAttrList.get(i));
-					System.out.println("add allattrlist of select"+targetAttrList.get(i));
+//					System.out.println("add allattrlist of select"+targetAttrList.get(i));
 				}
 			}
-	
+		
+			
+			
 		selectAttrList.addAll(allAttrList);//used for cartesianProduct 
-		selectTableList.addAll(allTableList);
+		selectTableList.addAll(allTableList);//used for cartesianProduct
 
 		
 		//for ColExp
@@ -774,18 +777,17 @@ public class DBExecutor{
 							query.getSelectAll()
 					);
 		}
-		
-//			System.out.println("debugggggggggggggggggggg!!~~~");
-//			printTable(combinedTable);
-
 		if(query.getCondition()==null)
 		{
 //			without condition result is here
 			System.out.println("print table --no condition ~~~~~~~~~~~~~~~~~~~~~~~~~");
-			printTable(combinedTable);
+			combinedTable = this.getTuplesBySelectedColumns(selectTableList,
+															selectAttrList, 
+															combinedTable);
+			printOut(combinedTable, query);
 			return;
 		}
-			
+		
 		////////////////////////////////////////
 		// Evaluate condition
 		////////////////////////////////////////
@@ -799,14 +801,15 @@ public class DBExecutor{
 		////////////////////////////////////////
 		TupleStack selectedValuesTable = null;
 
-		if(!query.getSelectAll()){
-			selectedValuesTable = combinedTable;
-//			selectedValuesTable = this.getTuplesBySelectedColumns(targetAttrList, combinedTable);	
-		}else{
-			selectedValuesTable = combinedTable;
-		}
+//		if(!query.getSelectAll()){
+//		selectedValuesTable = combinedTable;//with out selected
+		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList, selectAttrList, combinedTable);	
+//		}else{
+//			selectedValuesTable = combinedTable;
+//		}
 		if(selectedValuesTable!=null)
-			printTable(selectedValuesTable);
+//			printTable(selectedValuesTable);
+			printOut(selectedValuesTable,query);
 		else System.out.println("the selected result is empty");
 	}
 
@@ -833,7 +836,33 @@ public class DBExecutor{
 		else return null;
 		
 	}
-
+	
+	private void printOut(TupleStack combinedTable, Select query)
+	{
+		if(query.getAggregateMode() == Select.Aggregation.NON)
+			printTable(combinedTable);
+			
+		else if(query.getAggregateMode() == Select.Aggregation.COUNT)
+		{
+			System.out.println("----------------select "+combinedTable.size()+" tuples");
+		}
+		else if(query.getAggregateMode() ==Select.Aggregation.SUM)
+		{
+			int sum = 0;
+			if(combinedTable.getAttrList().size()==1)
+			{
+				if(combinedTable.getAttrList().get(0).getType()
+					==Attribute.Type.INT)
+					for(Tuple tuple:combinedTable)
+					{
+						sum+=tuple.get(0).getInt();	
+					}
+			}
+			System.out.println("----------------Sum is "+ sum);
+		}
+	}
+	
+	
 	/**
 	 * Print the table which finally match the query instruction<br>
 	 * @param tupleList 
@@ -841,7 +870,6 @@ public class DBExecutor{
 	private void printTable(TupleStack tupleList){
 		System.out.println("Printing table now====================");
 		
-		Hashtable<String, Integer> attrPosTable = tupleList.getAttrPosTable();
 		ArrayList<String> selectattrs = tupleList.getSelectattrList(); 
 		if(tupleList.size()== 0){
 			throw new Error("No tuple selected");
@@ -849,36 +877,21 @@ public class DBExecutor{
 		
 		if(selectattrs!=null)
 		{
-//			String[] orderedAttrNames = new String[attrPosTable.size()];
-//	
-//			//Get ordered attribute names
-//			for(String attrName : attrPosTable.keySet()){
-//				
-//				if(attrPosTable.get(attrName).intValue()<attrPosTable.size())//debug found out of bound
-//					orderedAttrNames[attrPosTable.get(attrName).intValue()] = attrName;
-//			}
-//		
-//			//Print attribute names
-//			for(int i = 0; i < orderedAttrNames.length; i++){
-//				System.out.printf("%-20s", orderedAttrNames[i]);
-//			}
-			
 			for(String attrName:selectattrs){
-				System.out.printf("%-20s", attrName);
-			}
-			
-			
+				System.out.printf("%-25s", attrName);
+			}			
 		}
 		System.out.println();
 
 		for(Tuple tuple : tupleList){
 			for(Value value : tuple){
-				System.out.printf("%-20s", value.toString());
+				System.out.printf("%-25s", value.toString());
 			}
 			System.out.println();
 		}
 
 		System.out.println(tupleList.size() + " tuples selected");
+		
 	}
 
 	/**
@@ -888,32 +901,49 @@ public class DBExecutor{
 	 * @return
 	 */
 	private TupleStack getTuplesBySelectedColumns(
+			ArrayList<String> selectTableList,
 			ArrayList<String> selectedList,
 			TupleStack tupleStack)
 	{
-		ArrayList<Attribute> attrList = tupleStack.getAttrList();
-		ArrayList<Attribute> newAttrList = new ArrayList<Attribute>();
-		Hashtable<String, Integer> attrPos = tupleStack.getAttrPosTable();
-		
-		// fetch select column name
-		for(String selectedColumn : selectedList){
-			newAttrList.add(attrList.get(attrPos.get(selectedColumn)));
+	
+		ArrayList<String> oldAttrList = tupleStack.getSelectattrList();
+		ArrayList<Integer> saveIndex = new ArrayList<Integer>();
+		ArrayList<String> newAttrList = new ArrayList<String>();
+		if(oldAttrList.size()==selectedList.size())
+		{
+			return tupleStack;
 		}
-
+		for(int i=0;i< selectedList.size();++i)
+		{
+			String selectAttr = selectedList.get(i);
+			String selectAttrWtable = selectTableList.get(i)+"."+selectedList.get(i);
+			if(oldAttrList.contains(selectAttr))
+				{
+					saveIndex.add(oldAttrList.indexOf(selectAttr));
+					newAttrList.add(selectAttr);
+				}
+			else if(oldAttrList.contains(selectAttrWtable))
+				{
+					saveIndex.add(oldAttrList.indexOf(selectAttrWtable));
+					newAttrList.add(selectAttrWtable);
+				}
+			else throw new Error("select Attribute not in condition tuple Stack");
+			
+		}
+		
 		// create new TupleStack by selected columns
-		TupleStack newTupleStack = new TupleStack(newAttrList);
+		TupleStack newTupleList = new TupleStack(newAttrList,true);
 		for(Tuple tuple : tupleStack){
-			Tuple newTuple = new Tuple();
-			for(String selectedValue : selectedList)
+			Tuple newOne = new Tuple();
+			for(int i=0; i< saveIndex.size();++i)
 			{
 				// get selected column from old tuple, add to new one
-				newTuple.add(tuple.get( attrPos.get(selectedValue).intValue() ) );
+//					tuple.remove(i);
+					newOne.add(tuple.get(saveIndex.get(i)));
 			}
-			newTupleStack.add(newTuple);
+			newTupleList.add(newOne);
 		}
-
-		return newTupleStack;
-
+		return newTupleList;
 	}
 	
 	/**

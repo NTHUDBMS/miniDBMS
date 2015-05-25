@@ -106,9 +106,6 @@ public class DBMS {
 			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");
-		}
-        
+		}        
     }
-
-	
 }
