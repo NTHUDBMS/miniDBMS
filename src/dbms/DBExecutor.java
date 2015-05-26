@@ -169,10 +169,10 @@ public class DBExecutor{
 		String tableName = query.getTableName();
 		if(tablePool!=null&&tablePool.containsKey(tableName))
 		{
-			insertTableInMemory = true;
+				insertTableInMemory = true;
 		}
 		//search table from Disk
-		if (insertTableInMemory==false&&tablePool==null)  
+		if (insertTableInMemory==false|tablePool==null)  
 		{
 			File tableFile = new File(databaseDefUrl);
 			if (tableFile.exists()) {
@@ -859,10 +859,8 @@ public class DBExecutor{
 		else if(query.getAggregateMode() ==Select.Aggregation.SUM)
 		{
 			int sum = 0;
-			if(combinedTable.getAttrList().size()==1)
+			if(combinedTable.getSelectattrList().size()==1)
 			{
-				if(combinedTable.getAttrList().get(0).getType()
-					==Attribute.Type.INT)
 					for(Tuple tuple:combinedTable)
 					{
 						sum+=tuple.get(0).getInt();	

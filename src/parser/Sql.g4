@@ -493,6 +493,7 @@ locals [
 	$tableList = new ArrayList<String> ();
 	$aliasTable = new Hashtable<String,String>();
 	$aggregate = Select.Aggregation.NON;
+
 }
 @after{
 	DBMS.outConsole("---------------");
@@ -500,7 +501,9 @@ locals [
 //clist columnlist
 //tlist tablelist
 //clist will add structs into array, tlist will do likewise
-	: SELECT clist+=columns (COMMA clist+=columns)*
+	: SELECT (aggregateMode{$aggregate = $aggregateMode.selectAggregate;}
+		LPARSE clist+=columns (COMMA clist+=columns)* RPARSE)? 
+	  	  ( clist+=columns (COMMA clist+=columns)* )?
 	  FROM tlist+=tables	(COMMA tlist+=tables)*
 	  where_clause
 	{
@@ -558,6 +561,18 @@ locals [
 			attrTableRelation.add(tableSelect);
 			
 			String dumpBuffer = (temp.col.tableName!=null)?temp.col.tableName+"." :"";
+			if($aggregate ==Select.Aggregation.COUNT)
+			{
+				DBMS.outConsole("\t\tCOUNT("+dumpBuffer+temp.col.columnName+
+					") _table #"+Integer.toString(tableSelect)
+				);
+			}
+			else if($aggregate ==Select.Aggregation.SUM)
+			{
+				DBMS.outConsole("\t\tSUM("+dumpBuffer+temp.col.columnName+
+					") _table #"+Integer.toString(tableSelect)
+				);
+			}
 			DBMS.outConsole("\t\t"+dumpBuffer+temp.col.columnName+
 					" _table #"+Integer.toString(tableSelect)
 			);
@@ -566,52 +581,121 @@ locals [
 			attrList,
 			attrTableRelation, 
 			$tableList, 
-			$where_clause.cond
+			$where_clause.cond,
+			$aggregate
 		);	
 	 
 	}
-	| SELECT COUNT LPARSE column_content RPARSE
-	  FROM tables 
-	  where_clause
-	{
-		// only one table
-		ArrayList<String> attrList = new ArrayList<String>();
-		attrList.add($column_content.value);
-		$tableList.add($tables.table.tableName);
+	// | SELECT COUNT LPARSE column_content RPARSE
+	//   //FROM tables
+	//   FROM	 tlist+=tables (COMMA tlist+=tables)* 
+	//   where_clause
+	// {
+	// 	// only one table
+	// 	ArrayList<String> attrList = new ArrayList<String>();
+	// 	attrList.add($column_content.value);
+	// 	//$tableList.add($tables.table.tableName);
 		
-		DBMS.outConsole("target table:\t"+$tables.table.tableName);
-		DBMS.outConsole("target columns:");
-		DBMS.outConsole("\t\tCOUNT("+$column_content.value+")");
+	// 	// follow is same as upper rule
+	// 	ArrayList<Integer> attrTableRelation = new ArrayList<Integer>();
+	// 			// collect elements, build table list
+	// 	for(TablesContext temp : $tlist){
+	// 		// check alias avalible, put to hashtable
+	// 		if(temp.table.aliasName!=null){
+	// 			$aliasTable.put(
+	// 				//from table struct
+	// 				temp.table.aliasName, 
+	// 				temp.table.tableName
+	// 			);
+	// 		}
+	// 		$tableList.add(temp.table.tableName);
+	// 		DBMS.outConsole("target table:\t"+temp.table.tableName);
+	// 	}
+	// 			// collect columns, recognize correspect table
+	// 	int tableSelect;
+	// 	DBMS.outConsole("target columns:");
+	// 	for(ColumnsContext temp : $clist){
+	// 		tableSelect = 0;
+	// 		if(temp.col.tableName!=null){
+	// 			// search respect table
+	// 			if($aliasTable.size()!=0){ 
+	// 				// have alias
+	// 				if($aliasTable.containsKey(temp.col.tableName)){
+	// 					String tname = $aliasTable.get(temp.col.tableName);
+	// 					tableSelect = $tableList.indexOf(tname);
+	// 				}
+	// 				else
+	// 				{
+	// 					throw new Error("Error alias name");
+	// 				}	
+	// 			}
+	// 			else // don't have alias
+	// 			{
+	// 				//use real name to identify table
+	// 				tableSelect = $tableList.indexOf(temp.col.tableName); 
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			tableSelect = -1;//leave it take over on executor
+	// 		}
+			
+	// 		attrList.add(temp.col.columnName);
+	// 		attrTableRelation.add(tableSelect);
+			
+	// 		String dumpBuffer = (temp.col.tableName!=null)?temp.col.tableName+"." :"";
+	// 		DBMS.outConsole("\t\t"+dumpBuffer+temp.col.columnName+
+	// 				" _table #"+Integer.toString(tableSelect)
+	// 		);
+	// 	}
 		
-		$query = new Select(
-			attrList,
-			$tableList, 
-			$where_clause.cond,
-			Select.Aggregation.COUNT
-		);	
-	}
-	| SELECT SUM LPARSE column_content RPARSE
-	  FROM tables 
-	  where_clause
-	{
-		ArrayList<String> attrList = new ArrayList<String>();
-		attrList.add($column_content.value);
-		$tableList.add($tables.table.tableName);
 		
-		DBMS.outConsole("target table:\t"+$tables.table.tableName);
-		DBMS.outConsole("target columns:");
-		DBMS.outConsole("\t\tSUM("+$column_content.value+")");
+//		DBMS.outConsole("target table:\t"+$tables.table.tableName);
+//		DBMS.outConsole("target columns:");
+//		DBMS.outConsole("\t\tCOUNT("+$column_content.value+")");
 		
-		$query = new Select(
-			attrList,
-			$tableList, 
-			$where_clause.cond,
-			Select.Aggregation.SUM
-		);	
-	}
+	// 	$query = new Select(
+	// 		attrList,
+	// 		attrTableRelation, 
+	// 		$tableList, 
+	// 		$where_clause.cond,
+	// 		Select.Aggregation.COUNT
+	// 	);	
+	// }
+	// | SELECT SUM LPARSE column_content RPARSE
+	//   FROM tables 
+	//   where_clause
+	// {
+	// 	ArrayList<String> attrList = new ArrayList<String>();
+	// 	attrList.add($column_content.value);
+	// 	$tableList.add($tables.table.tableName);
+		
+	// 	DBMS.outConsole("target table:\t"+$tables.table.tableName);
+	// 	DBMS.outConsole("target columns:");
+	// 	DBMS.outConsole("\t\tSUM("+$column_content.value+")");
+		
+	// 	$query = new Select(
+	// 		attrList,
+	// 		$tableList, 
+	// 		$where_clause.cond,
+	// 		Select.Aggregation.SUM
+	// 	);	
+	// }
 
 ;
 
+aggregateMode returns[Select.Aggregation selectAggregate]
+:
+	COUNT
+	{
+		$selectAggregate = Select.Aggregation.COUNT;
+	}
+	|
+	SUM
+	{
+		$selectAggregate = Select.Aggregation.SUM;
+	}
+;
 
 columns returns[ColumnStruct col]
 @init{

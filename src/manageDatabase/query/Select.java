@@ -57,7 +57,6 @@ public class Select extends Query{
 	public static enum Aggregation{
 		COUNT, SUM, NON
 	}
-	
 	/**
 	 * <pre>
 	 * Constructor with select conditions
@@ -74,42 +73,75 @@ public class Select extends Query{
 			ArrayList<String> attrList,
 			ArrayList<Integer> attrTableRelation,
 			ArrayList<String> tableNames,
-			Condition cond) 
+			Condition cond,
+			Aggregation aggregateMode) 
 	{
 		this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
 		this.attrTableRelation = attrTableRelation;
 		this.cond = cond;
-		this.aggregateMode = Aggregation.NON;
-		this.isSelectAll = checkSelectAll();
-	}
-
-	/**
-	 * COUNT aggregate
-	 * @param attrList
-	 * @param tableNames
-	 * @param cond
-	 * @param aggregateMode
-	 */
-	public Select( 
-			ArrayList<String> attrList, 
-			ArrayList<String> tableNames,
-			Condition cond, 
-			Aggregation aggregateMode)
-	{
-		
-		this.queryName = "SELECT";
-		this.tableNames = tableNames;
-		this.attrList = attrList;
-		this.attrTableRelation = new ArrayList<Integer>();
-		for(int i=0; i<this.attrList.size(); i++){
-			this.attrTableRelation.add(0);
-		}
-		this.cond = cond;
 		this.aggregateMode = aggregateMode;
 		this.isSelectAll = checkSelectAll();
 	}
+
+	
+//	
+//	/**
+//	 * <pre>
+//	 * Constructor with select conditions
+//	 * 2 table 2 attrlist
+//	 * 1 table 1 attrlist
+//	 * with condition or not
+//	 * </pre>
+//	 * @param attrList
+//	 * @param attrList2
+//	 * @param tableNames
+//	 * @param cond
+//	 */
+//	public Select(
+//			ArrayList<String> attrList,
+//			ArrayList<Integer> attrTableRelation,
+//			ArrayList<String> tableNames,
+//			Condition cond) 
+//	{
+//		this.queryName = "SELECT";
+//		this.tableNames = tableNames;
+//		this.attrList = attrList;
+//		this.attrTableRelation = attrTableRelation;
+//		this.cond = cond;
+//		this.aggregateMode = Aggregation.NON;
+//		this.isSelectAll = checkSelectAll();
+//	}
+//
+//	/**
+//	 * COUNT aggregate
+//	 * @param attrList
+//	 * @param tableNames
+//	 * @param cond
+//	 * @param aggregateMode
+//	 */
+//	public Select( 
+//			ArrayList<String> attrList,
+//			ArrayList<Integer> attrTableRelation,			
+//			ArrayList<String> tableNames,
+//			Condition cond, 
+//			Aggregation aggregateMode)
+//	{
+//		
+//		this.queryName = "SELECT";
+//		this.tableNames = tableNames;
+//		this.attrList = attrList;
+//		this.attrTableRelation = attrTableRelation;
+//		//make chang at sql.g4
+////		this.attrTableRelation = new ArrayList<Integer>();
+////		for(int i=0; i<this.attrList.size(); i++){
+////			this.attrTableRelation.add(0);
+////		}
+//		this.cond = cond;
+//		this.aggregateMode = aggregateMode;
+//		this.isSelectAll = checkSelectAll();
+//	}
 
 	/**
 	 * getter of tables to be selected
