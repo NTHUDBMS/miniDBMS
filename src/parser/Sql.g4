@@ -775,7 +775,7 @@ operand returns [Exp exp]
 	String tableAlias = null; 
 }
 	: (table_alias_name
-	{
+	{	
 		tableAlias = $table_alias_name.value;
 	} 
 	DOT)? column_name

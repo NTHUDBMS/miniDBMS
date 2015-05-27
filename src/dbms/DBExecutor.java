@@ -565,8 +565,10 @@ public class DBExecutor{
 		System.out.println("processed here for debug");
 		Condition selectCond=null;
 		if(query.getCondition()!=null)
+		{
 			selectCond = query.getCondition();
-		System.out.println("add condition okay");
+			System.out.println("add condition okay");
+		}
 		
 		ArrayList<String> conditionTableList = null;
 		ArrayList<String> conditionAttributeList = null;
@@ -766,14 +768,18 @@ public class DBExecutor{
 		//////////////////////////////////////////
 		TupleStack combinedTable;
 		if(query.getCondition()==null)
+			{
+				Condition con = null;
 				combinedTable = 
 				this.combineTables(
 						tableArrayList, 
 						tupleHashTable, 
 						selectAttrList,
 						selectTableList,
-						query.getSelectAll()
+						con //would be null
+//						query.getSelectAll()
 				);
+			}
 		else{
 			combinedTable = 
 					this.combineTables(
@@ -782,7 +788,8 @@ public class DBExecutor{
 							allAttrList,
 //							allAttrListWithTable,
 							allTableList,
-							query.getSelectAll()
+							query.getCondition()
+//							query.getSelectAll()
 					);
 		}
 		if(query.getCondition()==null)
@@ -801,7 +808,8 @@ public class DBExecutor{
 		////////////////////////////////////////
 		
 		if(selectCond != null&&combinedTable!=null){
-			combinedTable = getTuplesBySelectedCond(selectCond, combinedTable);
+			combinedTable = getTuplesBySelectedCond(selectCond,
+													combinedTable);
 		}
 		
 		////////////////////////////////////////
@@ -809,14 +817,15 @@ public class DBExecutor{
 		////////////////////////////////////////
 		TupleStack selectedValuesTable = null;
 
-//		if(!query.getSelectAll()){
-//		selectedValuesTable = combinedTable;//with out selected
+		if(!query.getSelectAll()){
 		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList,
-															  selectAttrList, 
-															  combinedTable);	
-//		}else{
-//			selectedValuesTable = combinedTable;
-//		}
+															selectAttrList, 
+															  combinedTable);
+		
+		}else{
+			selectedValuesTable = combinedTable;
+		}
+		
 		if(selectedValuesTable!=null)
 //			printTable(selectedValuesTable);
 			printOut(selectedValuesTable,query);
@@ -913,7 +922,6 @@ public class DBExecutor{
 			ArrayList<String> selectedList,
 			TupleStack tupleStack)
 	{
-	
 		ArrayList<String> oldAttrList = tupleStack.getSelectattrList();
 		ArrayList<Integer> saveIndex = new ArrayList<Integer>();
 		ArrayList<String> newAttrList = new ArrayList<String>();
@@ -1004,7 +1012,8 @@ public class DBExecutor{
 			Hashtable<String, TupleStack> tupleHashtable, 
 			ArrayList<String> selectAttrList, 
 			ArrayList<String> selectTableList,
-			boolean selectAll)
+//			boolean selectAll
+			Condition condition)
 
 	{
 
@@ -1020,13 +1029,45 @@ public class DBExecutor{
 
 			//Get a table that contains all values needed
 			TupleStack neededValueTable = null;
-			
-			neededValueTable = this.getNeededValuesTuples(table,selectTableList, tupleList, selectAttrList);
+			neededValueTable = this.getNeededValuesTuples(table,
+					  selectTableList,
+					  tupleList,
+					  selectAttrList);
+			if(condition !=null)
+			{
+				ArrayList<Exp> expList1= new ArrayList<Exp>(); 	
+				ArrayList<Exp> expList2= new ArrayList<Exp>(); 			 
+				condition.setHashExpList(expList1);
+				condition.setRangeExpList(expList2);
+				condition.setcompareExpList(condition.getExp());
+				expList1 =condition.getHashExpList();
+				expList2 = condition.getRangeExpList();
+				expList1.addAll(expList2);
+				for(Exp exp:expList1)
+				{
+					Condition con = new Condition(exp);
+					if(exp instanceof BinaryExp)
+					{
+						Exp left = ((BinaryExp) exp).getLeft();
+						Exp right = ((BinaryExp) exp).getRight();
+						if((left instanceof ColExp
+							&&((ColExp) left).getTableName().equals(table.getTableName()))
+							|
+							(right instanceof ColExp
+							&&((ColExp) left).getTableName().equals(table.getTableName())))
+						{
+							neededValueTable = this.getTuplesBySelectedCond(con, neededValueTable);
+						}
+					}
+					
+				}
+			}
 
+			
 			allTables.add(neededValueTable);
 		}
 		//would be result if no Where clause
-		return cartesianProduct(allTables);
+		return cartesianProduct(allTables,condition);
 	}
 
 	/**
@@ -1035,11 +1076,11 @@ public class DBExecutor{
 	 * @param allTables
 	 * @return
 	 */
-	private TupleStack cartesianProduct(LinkedList<TupleStack> allTables){
+	private TupleStack cartesianProduct(LinkedList<TupleStack> allTables,Condition condition){
 		//LinkedList<TuplesWithNameTable> cloneAllTables = new LinkedList<TuplesWithNameTable>(allTables);
 
 		while(allTables.size() >= 2){
-			TupleStack combinedTable = cartesianProduct(allTables.get(0), allTables.get(1));
+			TupleStack combinedTable = cartesianProduct(allTables.get(0), allTables.get(1), condition);
 			allTables.removeFirst();
 			allTables.removeFirst();
 			allTables.addFirst(combinedTable);
@@ -1049,7 +1090,7 @@ public class DBExecutor{
 	}
 
 	
-	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2){
+	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2,Condition condition){
 		Hashtable<String, Integer> newAttrPos;
 		TupleStack tupleList;
 
@@ -1073,15 +1114,28 @@ public class DBExecutor{
 		newSelectAttrs.addAll(table2.getSelectattrList());
 		tupleList.setselectattrList(newSelectAttrs);
 		
-		//Product table1 with table2
-		for(Tuple tuple1 : table1){
-			for(Tuple tuple2 : table2){
-				Tuple combinedTuple = new Tuple(tuple1);
-				combinedTuple.addAll(tuple2);
-				tupleList.add(combinedTuple);
+		if(condition!=null)
+		{
+			//add for inner join
+			Exp selectExp = condition.getExp();
+			condition.setJoinExp(selectExp);
+			Exp joinExp = condition.getJoinExp();
+			//Product table1 with table2
+			for(Tuple tuple1 : table1){
+				for(Tuple tuple2 : table2){
+					Tuple combinedTuple = new Tuple(tuple1);
+					combinedTuple.addAll(tuple2);
+					tupleList.add(combinedTuple);
+	
+				}
+				if(joinExp!= null)
+				{
+					Condition join =  new Condition (joinExp);
+					tupleList = this.getTuplesBySelectedCond(join, tupleList); //add for inner Join
+				}
+	
 			}
 		}
-
 		return tupleList;
 	}
 
@@ -1148,6 +1202,8 @@ public class DBExecutor{
 			}
 			newTupleList.add(newTuple);
 		}
+//		ArrayList <Exp > compareExpList = new ArrayList<Exp> ();
+		
 		return newTupleList;
 	}
 
