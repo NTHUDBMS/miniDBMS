@@ -817,14 +817,10 @@ public class DBExecutor{
 		////////////////////////////////////////
 		TupleStack selectedValuesTable = null;
 
-		if(!query.getSelectAll()){
 		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList,
 															selectAttrList, 
 															  combinedTable);
 		
-		}else{
-			selectedValuesTable = combinedTable;
-		}
 		
 		if(selectedValuesTable!=null)
 //			printTable(selectedValuesTable);
@@ -932,16 +928,21 @@ public class DBExecutor{
 		for(int i=0;i< selectedList.size();++i)
 		{
 			String selectAttr = selectedList.get(i);
-			String selectAttrWtable = selectTableList.get(i)+"."+selectedList.get(i);
+			String selectAttrWtable = 
+					selectTableList.get(i)+"."+selectedList.get(i);
 			if(oldAttrList.contains(selectAttr))
 				{
 					saveIndex.add(oldAttrList.indexOf(selectAttr));
 					newAttrList.add(selectAttr);
+					System.out.println("printout debugggg");
+					
 				}
 			else if(oldAttrList.contains(selectAttrWtable))
 				{
 					saveIndex.add(oldAttrList.indexOf(selectAttrWtable));
 					newAttrList.add(selectAttrWtable);
+					System.out.println("printout debugggg");
+					
 				}
 			else throw new Error("select Attribute not in condition tuple Stack");
 			
@@ -1029,7 +1030,8 @@ public class DBExecutor{
 
 			//Get a table that contains all values needed
 			TupleStack neededValueTable = null;
-			neededValueTable = this.getNeededValuesTuples(table,
+			neededValueTable = this.getNeededValuesTuples(
+					  table,
 					  selectTableList,
 					  tupleList,
 					  selectAttrList);
@@ -1050,6 +1052,7 @@ public class DBExecutor{
 					{
 						Exp left = ((BinaryExp) exp).getLeft();
 						Exp right = ((BinaryExp) exp).getRight();
+						//
 						if((left instanceof ColExp
 							&&((ColExp) left).getTableName().equals(table.getTableName()))
 							|

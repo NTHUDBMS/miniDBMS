@@ -31,14 +31,14 @@ public class DBMS {
 	private static String inputFile;
 	
 	public static void dump(String s){
-		if(DBMS.dumpParsingMsg){
-			
-			try{
-				os.write(s);
-				os.flush();
-			}catch(Exception e){}
-			
-		}
+//		if(DBMS.dumpParsingMsg){
+//			
+//			try{
+//				os.write(s);
+//				os.flush();
+//			}catch(Exception e){}
+//			
+//		}
 	}
 	
 	public static void outConsole(String s){
