@@ -127,7 +127,7 @@ public class Condition implements java.io.Serializable{
 					)
 			{
 				String op = ((BinaryExp) exp).getOp();
-				if (op.equals(">")|op.equals("<"))
+				if (op.equals(">")|op.equals("<")|op.equals("<>"))
 				{
 					this.rangeExpList.add(exp);
 				}

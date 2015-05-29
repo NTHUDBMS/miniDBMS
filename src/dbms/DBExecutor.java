@@ -562,7 +562,7 @@ public class DBExecutor{
 		////////////////////////////////////////
 		// Get conditional attributes if not null
 		////////////////////////////////////////
-		System.out.println("processed here for debug");
+//		System.out.println("processed here for debug");
 		Condition selectCond=null;
 		if(query.getCondition()!=null)
 		{
@@ -881,7 +881,7 @@ public class DBExecutor{
 	 * @param tupleList 
 	 */
 	private void printTable(TupleStack tupleList){
-		System.out.println("Printing table now====================");
+		System.out.println("==================Printing table now==================");
 		
 		ArrayList<String> selectattrs = tupleList.getSelectattrList(); 
 		if(tupleList.size()== 0){
@@ -934,14 +934,14 @@ public class DBExecutor{
 				{
 					saveIndex.add(oldAttrList.indexOf(selectAttr));
 					newAttrList.add(selectAttr);
-					System.out.println("printout debugggg");
+//					System.out.println("printout debugggg");
 					
 				}
 			else if(oldAttrList.contains(selectAttrWtable))
 				{
 					saveIndex.add(oldAttrList.indexOf(selectAttrWtable));
 					newAttrList.add(selectAttrWtable);
-					System.out.println("printout debugggg");
+//					System.out.println("printout debugggg");
 					
 				}
 			else throw new Error("select Attribute not in condition tuple Stack");
@@ -1588,7 +1588,7 @@ public class DBExecutor{
 	            		ret = (l <= r);
 	        		} else if (op.equals("=")) {
 	        			ret = (l == r);
-	        		} else if (op.equals("!=")) {
+	        		}else if (op.equals("<>")) {
 	            		ret = (l != r);
 	        		} else if (op.equals(">")) {
 	            		ret = (l > r);

@@ -5,6 +5,8 @@ package structure;
 
 import java.util.*;
 
+import com.google.common.collect.Multimap;
+
 /**
  * The space to store all tuples, which have column view * row view
  */
@@ -30,8 +32,16 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * Data in column view
 	 * Column is arrayList here
 	 */
-	private ArrayList<Column> columnList; 
-	
+	private ArrayList<Multimap<Value, Integer>> columnList; 
+public ArrayList<Multimap<Value, Integer>> getColumnList() {
+		return columnList;
+	}
+
+	public void setColumnList(ArrayList<Multimap<Value, Integer>> columnList) {
+		this.columnList = columnList;
+	}
+
+	//	ArrayList<Multimap<Value, Integer>> hashIndex;
 	/**
 	 * Ordered attribute name of columns 
 	 */
@@ -57,7 +67,7 @@ public class TupleStack extends ArrayList<Tuple>{
 		this.setAttrList(attrList); // build attrPosTable as the same time
 		this.setWidth(attrList.size());
 		this.setLength(this.size());
-		this.setColumnList(new ArrayList<Column>());
+//		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	
 	/**
@@ -70,7 +80,7 @@ public class TupleStack extends ArrayList<Tuple>{
 		this.setLength(this.size());
 		// no need to add column view at this stage
 		// but add tuple is used this arrayList...
-		this.setColumnList(new ArrayList<Column>());
+//		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	/**
 	 * Normal Constructor by using super class
@@ -78,12 +88,13 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * @param selectattrList is attrlist selected 
 	 * @param bool select is useless, distinguish constructor
 	 */
-	public TupleStack(ArrayList<String> selectattrList,boolean select) {
+	public TupleStack(ArrayList<String> selectattrList,boolean select) 
+	{
 		super();
 		this.setselectattrList(selectattrList); // build attrPosTable as the same time
 		this.setWidth(selectattrList.size());
 		this.setLength(this.size());
-		this.setColumnList(new ArrayList<Column>());
+		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	
 	
@@ -165,20 +176,20 @@ public class TupleStack extends ArrayList<Tuple>{
 //		// Insert into column view
 //		
 //	}
-	
-	/**
-	 * Override super method: E remove(int).<br>
-	 * Also remove tuple form column view
-	 */
-	public Tuple remove(int index){
-		Tuple ret = this.remove(index);
-		for(Column c : columnList){
-			c.remove(index);
-		}
-		
-		return ret;
-	}
-
+//	
+//	/**
+//	 * Override super method: E remove(int).<br>
+//	 * Also remove tuple form column view
+//	 */
+//	public Tuple remove(int index){
+//		Tuple ret = this.remove(index);
+//		for(Column c : columnList){
+//			c.remove(index);
+//		}
+//		
+//		return ret;
+//	}
+//
 
 	public int getWidth() {
 		return width;
@@ -228,17 +239,17 @@ public class TupleStack extends ArrayList<Tuple>{
 		 }
 	}
 
-	public ArrayList<Column> getColumnList() {
-		return columnList;
-	}
-
-	public void setColumnList(ArrayList<Column> columnList) {
-		
-		for(int i=0; i<this.width; i++){
-			columnList.add(new Column());
-		}
-		this.columnList = columnList;
-	}
+//	public ArrayList<Column> getColumnList() {
+//		return columnList;
+//	}
+//
+//	public void setColumnList(ArrayList<Column> columnList) {
+//		
+//		for(int i=0; i<this.width; i++){
+//			columnList.add(new Column());
+//		}
+//		this.columnList = columnList;
+//	}
 
 	public ArrayList<String> getSelectattrList() {
 		return selectattrList;
