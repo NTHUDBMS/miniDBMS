@@ -33,7 +33,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * Column is arrayList here
 	 */
 	private ArrayList<Multimap<Value, Integer>> columnList; 
-public ArrayList<Multimap<Value, Integer>> getColumnList() {
+	public ArrayList<Multimap<Value, Integer>> getColumnList() {
 		return columnList;
 	}
 
@@ -47,7 +47,6 @@ public ArrayList<Multimap<Value, Integer>> getColumnList() {
 	 */
 	private ArrayList<Attribute> attrList;
 	private ArrayList<String> selectattrList;
-//	private ArrayList<String> selectattrListWithTable;
 
 	/**
 	 * Position of attribute  attribute to tableId
@@ -94,7 +93,7 @@ public ArrayList<Multimap<Value, Integer>> getColumnList() {
 		this.setselectattrList(selectattrList); // build attrPosTable as the same time
 		this.setWidth(selectattrList.size());
 		this.setLength(this.size());
-		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
+//		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	
 	

@@ -29,7 +29,8 @@ public class DBMS {
 	public final static DBExecutor executor = new DBExecutor();
 	private static BufferedWriter os;
 	private static String inputFile;
-	
+
+//	used to print out parser message
 	public static void dump(String s){
 //		if(DBMS.dumpParsingMsg){
 //			
@@ -49,11 +50,11 @@ public class DBMS {
 	
     public static void main(String[] args) throws Exception {
 		long startTime = System.currentTimeMillis();
-    	try{
-			os = new BufferedWriter(new FileWriter(dumpFile));
-		}catch(IOException e){
-			
-		}
+//    	try{
+//			os = new BufferedWriter(new FileWriter(dumpFile));
+//		}catch(IOException e){
+//			
+//		}
     	
 		if ( args.length>0 ){
 			
@@ -104,7 +105,7 @@ public class DBMS {
 			}// end for
 			//DBMS.executor.cleanUp();
 			DBMS.executor.saveTupleList();//do file I/O
-			os.close();
+//			os.close();
 		}else{
 			System.out.println("No Input SQL, Plz put sql file as argument.");
 		}

@@ -131,7 +131,7 @@ public class Condition implements java.io.Serializable{
 				{
 					this.rangeExpList.add(exp);
 				}
-				else if(op.equals("=="))
+				else if(op.equals("="))
 				{
 					this.hashExpList.add(exp);
 				}
