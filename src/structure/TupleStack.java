@@ -5,6 +5,8 @@ package structure;
 
 import java.util.*;
 
+import structure.Attribute.Type;
+
 import com.google.common.collect.Multimap;
 
 /**
@@ -71,6 +73,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	
 	/**
 	 * Normal Constructor by using super class
+	 * used in getTupleList in DBexecutor
 	 */
 	public TupleStack(ArrayList<Attribute> attrList) {
 		super();
@@ -82,6 +85,9 @@ public class TupleStack extends ArrayList<Tuple>{
 //		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	/**
+	 * used in select get Tuple by select column<br>
+	 * 							   select condition<br>
+	 * 							   needed value tuple
 	 * Normal Constructor by using super class
 	 * input String attrList because of select
 	 * @param selectattrList is attrlist selected 
@@ -96,7 +102,7 @@ public class TupleStack extends ArrayList<Tuple>{
 //		this.setColumnList(new ArrayList<Multimap<Value, Integer>>());
 	}
 	
-	
+	//used in cartesianProduct for DBexecutor
 	public TupleStack(){
 		super();//call arrayList<Tuple> constructor
 	}
@@ -144,6 +150,9 @@ public class TupleStack extends ArrayList<Tuple>{
 	
 
 	/**
+	 * 
+	 * For insert in DBexecutor
+	 * 
 	 * Override super method: boolean add(E e).<br>
 	 * Store tuple and insert into column view of TupleStack.<br>
 	 */
@@ -151,15 +160,16 @@ public class TupleStack extends ArrayList<Tuple>{
 		boolean ans;
 		
 		// Insert into column view
-		int i=0;
-		for(Value v : tuple){
-//			if(attrList.get(i).getType() == v.getType())
-			{
+//		int i=0;
+//		for(Value v : tuple){
+//			if(attrList.get(i).getType() == v.getType()
+//					&&v.getType() == Type.INT)
+//			{
 //				(columnList.get(i)).add(v);
 //				i++;
-			}
+//			}
 //			else throw new Error("INSERT: wrong data type.");
-		}
+//		}
 		ans = super.add(tuple);
 		++this.length; //add length
 		return ans;
@@ -228,6 +238,7 @@ public class TupleStack extends ArrayList<Tuple>{
 	 * @param attrList
 	 */
 	public void setselectattrList(ArrayList<String> selectattrList) {
+		this.setWidth(selectattrList.size());
 		this.setSelectattrList(selectattrList);
 		// construct attrPosTable
 		this.attrPosTable = new Hashtable<String,Integer>();

@@ -1,11 +1,37 @@
 package dbms;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InvalidClassException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Set;
 
-import manageDatabase.expression.*;
-import manageDatabase.query.*;
-import structure.*;
+import manageDatabase.expression.BinaryExp;
+import manageDatabase.expression.ColExp;
+import manageDatabase.expression.Condition;
+import manageDatabase.expression.Exp;
+import manageDatabase.expression.IdExp;
+import manageDatabase.expression.IntExp;
+import manageDatabase.expression.StrExp;
+import manageDatabase.query.Create;
+import manageDatabase.query.Insert;
+import manageDatabase.query.Query;
+import manageDatabase.query.Select;
+import structure.Attribute;
+import structure.Table;
+import structure.Tuple;
+import structure.TupleFile;
+import structure.TupleStack;
+import structure.Value;
 
 /**
  * This class performs the major part of DBMS.<br>
@@ -64,6 +90,7 @@ public class DBExecutor{
 	public void execute(Query query)
 	{
 		long startTime = System.currentTimeMillis();
+
 		try{
 			if (query instanceof Create) {
 				create((Create)query);
@@ -260,6 +287,17 @@ public class DBExecutor{
 //			}
 		}
 	}
+	private ArrayList <Integer> getColumnByPos(
+			int position, TupleStack tuples)
+	{
+		ArrayList <Integer> selectColumn = new ArrayList <Integer>();
+		for(Tuple tuple: tuples)
+			selectColumn.add(tuple.get(position).getInt());
+		return selectColumn;
+
+	}
+	
+	
 	
 	/**
 	 * retrieve columnList
@@ -496,6 +534,7 @@ public class DBExecutor{
 		
 		
 //		boolean isNormalUser = query.isNormalUser();
+//		long startTime = System.currentTimeMillis();
 
 		//////////////////////////////////////////
 		// Check if TablePool defined
@@ -520,6 +559,9 @@ public class DBExecutor{
 		}else if(selectTableInMemory==false && (!tableFile.exists())){
 			throw new Error("SELECT: No Table Defined");
 		}
+//		long endTime1   = System.currentTimeMillis();
+//		long totalTime1 = endTime1 - startTime;		
+//		System.out.println("get table "+totalTime1);
 
 		//////////////////////////////////////////
 		// Hash table and arrayList to save table
@@ -558,6 +600,7 @@ public class DBExecutor{
 			tupleHashTable.put(tableName,this.getTupleList(tableName));
 			System.out.println("put tuplelist in select succeed");
 		}
+		//if get column here it will be like redo insert, very unefficientcy
 //		this.getColumn(tableList.get(tableNames.get(0)), tableList.get(tableNames.get(0)).getAttrList().get(0).getName());
 		
 		////////////////////////////////////////
@@ -754,7 +797,10 @@ public class DBExecutor{
 				throw new Error("SELECT: Attribute " + attrName +" does not exists");
 			}			
 		}
-		
+//		long endTime2   = System.currentTimeMillis();
+//		long totalTime2 = endTime2 - endTime1;		
+//		System.out.println("lots of checking "+totalTime2);
+
 		//////////////////////////////////////////
 		// Start joining multiple tables to a single 
 		//	 table that depends on all attributes 
@@ -784,14 +830,22 @@ public class DBExecutor{
 							query.getCondition()
 					);
 		}
+//		long endTime3   = System.currentTimeMillis();
+//		long totalTime4 = endTime3 - endTime2;		
+//		System.out.println("combine table cartesian select condition "+totalTime4);
+
 		if(query.getCondition()==null)
 		{
 //			without condition result is here
-			System.out.println("print table --no condition ~~~~~~~~~~~~~~~~~~~~~~~~~");
+//			System.out.println("print table --no condition ~~~~~~~~~~~~~~~~~~~~~~~~~");
 			combinedTable = this.getTuplesBySelectedColumns(selectTableList,
 															selectAttrList, 
 															combinedTable);
 			printOut(combinedTable, query);
+//			long endTime4   = System.currentTimeMillis();
+//			long totalTime5 = endTime4 - endTime3;		
+//			System.out.println("selected column no condition "+totalTime5);
+
 			return;
 		}
 		
@@ -812,7 +866,14 @@ public class DBExecutor{
 		selectedValuesTable = this.getTuplesBySelectedColumns(selectTableList,
 															selectAttrList, 
 															  combinedTable);
-				
+		
+		
+//		printOut(combinedTable,query);
+//		long endTime5   = System.currentTimeMillis();
+//
+//		long totalTime6 = endTime5 - endTime3;		
+//		System.out.println("selected column with condition "+totalTime6);
+
 		if(selectedValuesTable!=null)
 			printOut(selectedValuesTable,query);
 		else System.out.println("the selected result is empty");
@@ -907,9 +968,13 @@ public class DBExecutor{
 			ArrayList<String> selectedList,
 			TupleStack tupleStack)
 	{
+		
 		ArrayList<String> oldAttrList = tupleStack.getSelectattrList();
 		ArrayList<Integer> saveIndex = new ArrayList<Integer>();
 		ArrayList<String> newAttrList = new ArrayList<String>();
+//		System.out.println("old attrs"+oldAttrList);
+//		System.out.println("new attrs"+selectedList);
+
 		if(oldAttrList.size()==selectedList.size())
 		{
 			return tupleStack;
@@ -921,6 +986,7 @@ public class DBExecutor{
 					selectTableList.get(i)+"."+selectedList.get(i);
 			if(oldAttrList.contains(selectAttr))
 				{
+//					System.out.println("save index add"+oldAttrList.indexOf(selectAttr));
 					saveIndex.add(oldAttrList.indexOf(selectAttr));
 					newAttrList.add(selectAttr);
 //					System.out.println("printout debugggg");
@@ -928,6 +994,7 @@ public class DBExecutor{
 				}
 			else if(oldAttrList.contains(selectAttrWtable))
 				{
+//				System.out.println("save index add"+oldAttrList.indexOf(selectAttrWtable));
 					saveIndex.add(oldAttrList.indexOf(selectAttrWtable));
 					newAttrList.add(selectAttrWtable);
 //					System.out.println("printout debugggg");
@@ -938,6 +1005,7 @@ public class DBExecutor{
 		}
 		
 		// create new TupleStack by selected columns
+//		System.out.println("select index are"+ saveIndex);
 		TupleStack newTupleList = new TupleStack(newAttrList,true);
 		for(Tuple tuple : tupleStack){
 			Tuple newOne = new Tuple();
@@ -945,6 +1013,7 @@ public class DBExecutor{
 			{
 				// get selected column from old tuple, add to new one
 //					tuple.remove(i);
+//				System.out.println("tuple in get column"+tuple); 
 				newOne.add(tuple.get(saveIndex.get(i)));
 			}
 			newTupleList.add(newOne);
@@ -971,9 +1040,9 @@ public class DBExecutor{
 		Object retBool;
 //		if(tuples!=null&& tuples.getAttrPosTable()!=null)//debug used
 		for(Tuple tuple : tuples){
-			if(tuple.size()>=attrPos.size()) 
+//			if(tuple.size()>=attrPos.size()) 
 				retBool = exp.accept(this, attrPos, tuple);
-			else retBool = false; 
+//			else retBool = false; 
 			if(retBool instanceof Boolean){
 				if( ((Boolean) retBool).booleanValue() == true){
 					newTupleList.add(tuple);
@@ -1004,7 +1073,7 @@ public class DBExecutor{
 	{
  
 		LinkedList<TupleStack> allTables = new LinkedList<TupleStack>();
-		
+		ArrayList<String> tableName = new ArrayList<String>();
 		for(Table table : tables){
 			TupleStack tupleList = tupleHashtable.get(table.getTableName());
 
@@ -1012,11 +1081,16 @@ public class DBExecutor{
 			TupleStack neededValueTable = null;
 			
 			//will create new tupleStack
+//			long startTime = System.currentTimeMillis();
+
 			neededValueTable = this.getNeededValuesTuples(
 					  table,
 					  selectTableList,
 					  tupleList,
-					  selectAttrList);
+					  selectAttrList,
+					  condition);
+//			long endTime = System.currentTimeMillis();
+//			System.out.println("get need value "+(endTime- startTime));
 			if(condition !=null)
 			{
 			ArrayList<Exp> expList1= new ArrayList<Exp>(); 	
@@ -1031,34 +1105,40 @@ public class DBExecutor{
 			{
 				Condition con = new Condition(exp);
 				Exp left = ((BinaryExp) exp).getLeft();
-				Exp right = ((BinaryExp) exp).getRight();
+//				Exp right = ((BinaryExp) exp).getRight();
 				//
 				if((left instanceof ColExp
 					&&((ColExp) left).getTableName().equals(table.getTableName()))
 					|
-					(right instanceof ColExp
-					&&((ColExp) left).getTableName().equals(table.getTableName()))
-					|
+//					(right instanceof ColExp
+//					&&((ColExp) left).getTableName().equals(table.getTableName()))
+//					|
 					(left instanceof IdExp
 					&&(table.getAttrPos(((IdExp)left).getId())!=-1)
 					)
-					|
-					(right instanceof IdExp
-					&&(table.getAttrPos(((IdExp)right).getId())!=-1)
-					)
+//					|
+//					(right instanceof IdExp
+//					&&(table.getAttrPos(((IdExp)right).getId())!=-1)
+//					)
 					)
 				{
 					//will create new tupleStack
 					neededValueTable = this.getTuplesBySelectedCond(con, neededValueTable);
+//					long endTime2 = System.currentTimeMillis();
+//					System.out.println("get condition value "+(endTime2- endTime));
 				}
 			}
 			}
-
+			tableName.add(table.getTableName());
 			allTables.add(neededValueTable);
 		}
+
 		//would be result if no Where clause
 		//create new tupleStack
-		return cartesianProduct(allTables,condition);
+//		return cartesianProduct(allTables,condition);
+		
+		return cartesianProduct(allTables.get(0),allTables.get(1),condition, tableName);
+		
 	}
 
 	/**
@@ -1081,34 +1161,173 @@ public class DBExecutor{
 	}
 
 	
-	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2,Condition condition){
-		Hashtable<String, Integer> newAttrPos;
+	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2,Condition condition,ArrayList<String>tableName){
+		long startTime = System.currentTimeMillis();
+
+//		Hashtable<String, Integer> newAttrPos;
 		TupleStack tupleList;
 
-		newAttrPos = new Hashtable<String, Integer>(table1.getAttrPosTable());
-		tupleList = new TupleStack();
+//		Hashtable<String, Integer> table1NameTable = table1.getAttrPosTable();
+//		Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
+//
+//		newAttrPos = new Hashtable<String, Integer>(table1NameTable);
+//		//0 1 2 3 4 5 6+0 6+1 6+2
+//		//Update name table position
+//		int table1Size = table1NameTable.size();
+//		for(String key : table2NameTable.keySet()){
+//			 newAttrPos.put(key, table2NameTable.get(key) + table1Size);
+//			// newAttrPos.put(key, table2NameTable.get(key));
+//		}
 
-		int table1Size = newAttrPos.size();
-		Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
-		//0 1 2 3 4 5 6+0 6+1 6+2
-		//Update name table position
-		for(String key : table2NameTable.keySet()){
-			 newAttrPos.put(key, table2NameTable.get(key) + table1Size);
-			// newAttrPos.put(key, table2NameTable.get(key));
-		}
+		tupleList = new TupleStack(); 
 
-		tupleList.setAttrPosTable(newAttrPos);
+//		tupleList.setAttrPosTable(newAttrPos);
 
 		//set selectattrList
 		ArrayList<String> newSelectAttrs = new ArrayList<String>();
-		newSelectAttrs.addAll(table1.getSelectattrList());
-		newSelectAttrs.addAll(table2.getSelectattrList());
+		ArrayList<String> table1Attrs = table1.getSelectattrList();
+		ArrayList<String> table2Attrs = table2.getSelectattrList();
+		newSelectAttrs.addAll(table1Attrs);
+		newSelectAttrs.addAll(table2Attrs);
 		tupleList.setselectattrList(newSelectAttrs);
+//		System.out.println("1join 2"+newSelectAttrs);
+//		System.out.println("1join 2"+tupleList.getAttrPosTable());
+
+		ArrayList<String> newSelectAttrs2 = new ArrayList<String>();
+		newSelectAttrs2.addAll(table2Attrs);
+		newSelectAttrs2.addAll(table1Attrs);
 		
-////		if(condition!=null)
-//		{
-			
+		if(condition!=null)
+		{
+			Exp selectExp = condition.getExp();
+			condition.setJoinExp(selectExp);
+			Exp joinExp = condition.getJoinExp();
+			if(joinExp!= null)
+			{
+				Exp left = ((BinaryExp)joinExp).getLeft();
+				Exp right =  ((BinaryExp)joinExp).getRight();
+				String leftAttr= ((ColExp)left).getColomnName();
+				String rightAttr = ((ColExp)right).getColomnName();
+				int posInTable1;
+				int posInTable2;
+//				System.out.println(table1Attrs);
+//				System.out.println(table2Attrs);
+				String tableName1= tableName.get(0);
+				String tableName2= tableName.get(1);
+				posInTable1 = table1Attrs.indexOf(tableName1+"."+leftAttr);
+				if(posInTable1 == -1)
+					{
+						posInTable1 = table1Attrs.indexOf(tableName1+"."+rightAttr);
+						posInTable2 = table2Attrs.indexOf(tableName2+"."+leftAttr);
+					}
+				else
+				posInTable2 = table2Attrs.indexOf(tableName2+"."+rightAttr);
+//				System.out.println(leftAttr);
+//				System.out.println(rightAttr);
+//				
+//				System.out.println("pos"+posInTable1);
+//				System.out.println("pos"+posInTable2);
+				ArrayList <Integer> joinColumn1 = getColumnByPos(posInTable1,table1);
+				ArrayList <Integer> joinColumn2 = getColumnByPos(posInTable2,table2);
+				Set<Integer> joinColumn1Set = new HashSet<Integer> (joinColumn1);
+				HashMap<Integer,Integer> map1 = new HashMap<Integer, Integer>();
+				HashMap<Integer,Integer> map2 = new HashMap<Integer, Integer>();
+				
+				for(int i=0;i<joinColumn1.size();++i)
+				{
+					map1.put((joinColumn1.get(i)), i);
+				}
+				for(int i=0;i<joinColumn2.size();++i)
+				{
+					map2.put((joinColumn2.get(i)), i);
+				}
+				boolean toBeJoin;//true if table1, else table2
+				//if all are distinct value, it should be zero
+//				System.out.println("joinColumn1Set.size()"+joinColumn1Set.size()
+//						+"joinColumn1Set.size()"+joinColumn1.size());
+				if(joinColumn1Set.size() != joinColumn1.size())//1 join 2
+					{
+						toBeJoin = false;
+//						System.out.println("table1 join table2");
+					}
+				else toBeJoin = true;//table 2 join table 1
+//				System.out.println("debug table1"+tableName1);
+//				System.out.println("debug table2"+tableName2);
+//				System.out.println("debug "+table1Attrs);
+//				System.out.println("debug "+table2Attrs);
+				if(toBeJoin== true) //2 join 1
+				{
+					//update select attrs
+//					System.out.println("to be join is true change selectlist");
+
+					tupleList.setselectattrList(newSelectAttrs2);
+//					System.out.println("2 to 1 "+tableName2+"join "+tableName1+" "+newSelectAttrs2);
+//					System.out.println(tupleList.getAttrPosTable());
+					//Table2 join Table1
+					//search index in table1 that match 
+					//to attr in tuple of table2
+//					for(Tuple tuple2: table2){
+						for(int j=0;j< table2.size();j++){
+							Tuple tuple2 = table2.get(j);
+							Integer target = joinColumn2.get(j);
+//							System.out.println(target.getInt());
+							int find = -1;
+							if(map1.get(target)!=null)
+								find = map1.get(target);
+//							System.out.println("find"+find);
+							
+							if(find!=-1)
+							{
+								Tuple combinedTuple = new Tuple(tuple2);
+								combinedTuple.addAll(table1.get(find));
+								tupleList.add(combinedTuple);
+//								System.out.println("add tuple"+ combinedTuple);
+								
+							}
+							
+							
+						
+					}//end outer for
+						return tupleList;
+				}
+				else{
+//					System.out.println("1 to 2 "+tableName1+"join "+tableName2+" "+newSelectAttrs);
+
+//					for(Tuple tuple1: table1){
+					for(int j=0;j< table1.size();j++){
+//						ArrayList<Integer> toBeJoinIndex = new ArrayList <Integer>();
+						
+//						for(Value target:joinColumn1)
+//							{
+						Tuple tuple1 = table1.get(j);
+						Integer target = joinColumn1.get(j);
+//								for(int i =0;i<joinColumn2.size();++i)
+//								{
+//									System.out.println(target.getInt());
+									int find = -1;
+									if(map2.get(target)!=null)
+									find = map2.get(target);
+									if(find!=-1)
+									{
+										Tuple combinedTuple = new Tuple(tuple1);
+										combinedTuple.addAll(table2.get(find));
+										tupleList.add(combinedTuple);
+//										System.out.println("add tuple"+ combinedTuple);
+
+									}
+
+//								}
+//							}
+						
+					}//end outer for
+
+				}
+			}
+		}	
+
+		
 		//Product table1 with table2
+		else//has no condition
 		for(Tuple tuple1 : table1){
 			for(Tuple tuple2 : table2){
 				Tuple combinedTuple = new Tuple(tuple1);
@@ -1127,19 +1346,23 @@ public class DBExecutor{
 				if(joinExp!= null)
 				{
 					Condition join =  new Condition (joinExp);
+					//new tuple Stack
 					tupleList = this.getTuplesBySelectedCond(join, tupleList);
 				}
-			}
-			
-	
-//			}
+			}	
 		}
+		
+		long endTime = System.currentTimeMillis();
+		System.out.println("get cartesian value "+(endTime- startTime));
+
 		return tupleList;
 	}
 
 	/**
 	 * create new tuple Stack based on select attribute
 	 * and condition attribute in one table
+	 * also update the new stack's attribute list
+	 * would contain table.XX
 	 * @param table
 	 * @param selectTableList
 	 * @param tuples
@@ -1150,7 +1373,8 @@ public class DBExecutor{
 			Table table, 
 			ArrayList<String>selectTableList,
 			TupleStack tuples, 
-			ArrayList<String> selectAttrList)
+			ArrayList<String> selectAttrList,
+			Condition condition)
 	{
 
 		ArrayList<String> newAttrList = new ArrayList<String>();
@@ -1187,20 +1411,129 @@ public class DBExecutor{
 				neededAttrPos.add(attrPos);
 			}
 		}
-
+		
+//		Multimap<Integer, Integer> index=ArrayListMultimap.create();
+		
+//		TreeMultimap<Integer, Integer> index2 = TreeMultimap.create();
+	    
 		//will set attrlistPos 
 		//important to be used in condition checking
+		//first time create new tupleStack in select O(n)
+		//maybe can do indexing after here
 		TupleStack newTupleList = new TupleStack(newAttrList,true);
 		
 		//Save all needed values in each tuple
+//		Value key = null;
+//		int tupleIndex=0;
 		for(Tuple tuple : tuples){
 			Tuple newTuple = new Tuple();
 			for(Integer valuePos : neededAttrPos){
 				newTuple.add(tuple.get(valuePos));
+				//for indexing
+//				if(tuple.get(valuePos).getType()==Type.INT);//in this demo only one
+//					key = tuple.get(valuePos);
 			}
 			newTupleList.add(newTuple);
+			//for indexing
+//			if(key!=null)
+//			{
+//				index.put(key.getInt(),tupleIndex);
+//				index2.put(key.getInt(), tupleIndex);
+//				tupleIndex++;
+//			}
+			
 		}
-		
+//		
+//		if(condition !=null)
+//		{
+//		ArrayList<Exp> expList1= new ArrayList<Exp>(); 	
+//		ArrayList<Exp> expList2= new ArrayList<Exp>(); 			 
+//		condition.setHashExpList(expList1);
+//		condition.setRangeExpList(expList2);
+//		condition.setcompareExpList(condition.getExp());
+//		expList1 =condition.getHashExpList();
+//		ArrayList<Integer> hashSelectList = null;
+//		for(Exp exp:expList1)
+//		{
+//			Exp left = ((BinaryExp) exp).getLeft();
+//			Exp right = ((BinaryExp) exp).getRight();
+//			if(	(
+//				(left instanceof ColExp
+//				&&((ColExp) left).getTableName().equals(table.getTableName()))
+//				|
+//				(left instanceof IdExp
+//				&&(table.getAttrPos(((IdExp)left).getId())!=-1))
+//				)
+//				&&(right instanceof IntExp)
+//			  )
+//			{
+//				//do hash Index here
+//				int hashKey;
+//				Collection<Integer> hashSelect= null;
+//				if(right instanceof IntExp)
+//					{
+//					hashKey = ((IntExp) right).getInt();
+//					hashSelect = index.get(hashKey);
+//					}
+//				hashSelectList= new ArrayList<Integer>(hashSelect);
+//			}
+//		}
+//		if(hashSelectList!=null)
+//		for(int i=0;i<hashSelectList.size();++i){
+//			Tuple newTuple = new Tuple();
+//			Tuple oldTuple = tuples.get(hashSelectList.get(i));
+//			for(Integer valuePos : neededAttrPos){
+//				newTuple.add(oldTuple.get(valuePos));
+//				//for indexing
+////				if(tuple.get(valuePos).getType()==Type.INT);//in this demo only one
+////					key = tuple.get(valuePos);
+//			}
+//			newTupleList.add(newTuple);
+//			//for indexin
+//		}
+//		
+//		expList2 = condition.getRangeExpList();
+//		for(Exp exp:expList2)
+//		{
+//			Exp left = ((BinaryExp) exp).getLeft();
+//			Exp right = ((BinaryExp) exp).getRight();
+//			if(
+//				(
+//				(left instanceof ColExp
+//				&&((ColExp) left).getTableName().equals(table.getTableName()))
+//				|
+//				(left instanceof IdExp
+//				&&(table.getAttrPos(((IdExp)left).getId())!=-1))
+//				)
+//				&&(right instanceof IntExp)
+//				
+//			 ){
+//				//do range select here
+//				if((((BinaryExp)exp).getOp()).equals(">"))
+//				{
+//					
+//				}
+//				else if((((BinaryExp)exp).getOp()).equals(">="))
+//				{
+//					
+//				}
+//				else if((((BinaryExp)exp).getOp()).equals("<"))
+//				{
+//					
+//				}
+//				else if((((BinaryExp)exp).getOp()).equals("<="))
+//				{
+//					
+////					SortedMultiMap<Integer,Integer> nav=
+////					index2.headMap(((IntExp) right).getInt(),true);
+//				}
+//				else if((((BinaryExp)exp).getOp()).equals("<>"))
+//				{
+//					
+//				}
+//			}//end if
+//		}//end for
+//		}
 		return newTupleList;
 	}
 
