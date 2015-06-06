@@ -1,9 +1,9 @@
-# miniDBMS -- Team 6
+ï»¿# miniDBMS -- Team 6
 CS4710 Introducing to Databases
 
 Member: 
 -----------------------------------------------------------
-	Paul, ½²¦tµ¾, ±i®Ñ¥¿
+	Paul, Shawn(è”¡å®‡ç¿”), Mike(å¼µæ›¸æ­£)
 
 Description:
 -----------------------------------------------------------
