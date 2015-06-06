@@ -25,16 +25,16 @@ Execute Steps:
 
 	3.Add External JARS:
 	(Project->Properties->Java Build Path->Add External JARS)
-	(workspace)miniDBMS\JavaLib\antlr-4.4-complete.jar
-	(workspace)miniDBMS\JavaLib\google-collect-1.0.jar
+	(project_dir)\JavaLib\antlr-4.4-complete.jar
+	(project_dir)\JavaLib\google-collect-1.0.jar
 
 	4.Execute the project with test benches of SQL files as argument
 	(Eclipse->Run->Run Configurations->Arguments)
 	Arguments should be ordered as below:
-	(workspace)\miniDBMS\Testbench\DBDemo3\tables.sql
-	(workspace)\miniDBMS\Testbench\DBDemo3\abstracts.sql
-	(workspace)\miniDBMS\Testbench\DBDemo3\stopwords.sql
-	(workspace)\miniDBMS\Testbench\DBDemo3\testDemo3.sql
+	(project_dir)\Testbench\DBDemo3\tables.sql
+	(project_dir)\Testbench\DBDemo3\abstracts.sql
+	(project_dir)\Testbench\DBDemo3\stopwords.sql
+	(project_dir)\Testbench\DBDemo3\testDemo3.sql
 
 	5.Main is in "dbms.DBMS.java", open it and execute
 	
