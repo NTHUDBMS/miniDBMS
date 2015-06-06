@@ -1,5 +1,6 @@
 ﻿# miniDBMS -- Team 6
 CS4710 Introducing to Databases
+
 GIT repository: https://github.com/NTHUDBMS/miniDBMS.git
 
 Member: 
