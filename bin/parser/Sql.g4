@@ -1080,7 +1080,7 @@ IDENTIFIER
 
 INT_IDENTI
 :
-	DIGIT+
+	'-'?DIGIT+
 ;
 
 DOUBLE_IDENTI
@@ -1101,12 +1101,7 @@ DOUBLE_IDENTI
 
 VARCHAR_IDENTI
 :
-	(
-		'\''
-	) ~[\r\n'\'']*
-	(
-		'\''
-	)
+	('\'') ~[\r\n'\'']*('\'')
 ;
 
 SINGLE_LINE_COMMENT
