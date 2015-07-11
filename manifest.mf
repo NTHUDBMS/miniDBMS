@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Sealed: true
+Created-By: Melpomene927
+Main-Class: dbms.DBMS
+Class-Path: JavaLib/antlr-4.4-complete.jar google-collect-1.0.jar
