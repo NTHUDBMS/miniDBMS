@@ -4,6 +4,7 @@
 *.db
 Output.txt
 *.DS_Store
+*.txt
 
 
 bin/
