@@ -3,6 +3,8 @@
 *.dat
 *.db
 Output.txt
+*.DS_Store
+
 
 bin/
 
@@ -19,8 +21,3 @@ hs_err_pid*
 /bin/
 /.settings/
 
-*.class
-*.classpath
-*.dat
-*.db
-Output.txt

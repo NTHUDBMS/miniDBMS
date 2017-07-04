@@ -1110,16 +1110,9 @@ public class DBExecutor{
 				if((left instanceof ColExp
 					&&((ColExp) left).getTableName().equals(table.getTableName()))
 					|
-//					(right instanceof ColExp
-//					&&((ColExp) left).getTableName().equals(table.getTableName()))
-//					|
 					(left instanceof IdExp
 					&&(table.getAttrPos(((IdExp)left).getId())!=-1)
 					)
-//					|
-//					(right instanceof IdExp
-//					&&(table.getAttrPos(((IdExp)right).getId())!=-1)
-//					)
 					)
 				{
 					//will create new tupleStack
@@ -1164,24 +1157,8 @@ public class DBExecutor{
 	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2,Condition condition,ArrayList<String>tableName){
 		long startTime = System.currentTimeMillis();
 
-//		Hashtable<String, Integer> newAttrPos;
 		TupleStack tupleList;
-
-//		Hashtable<String, Integer> table1NameTable = table1.getAttrPosTable();
-//		Hashtable<String, Integer> table2NameTable = table2.getAttrPosTable();
-//
-//		newAttrPos = new Hashtable<String, Integer>(table1NameTable);
-//		//0 1 2 3 4 5 6+0 6+1 6+2
-//		//Update name table position
-//		int table1Size = table1NameTable.size();
-//		for(String key : table2NameTable.keySet()){
-//			 newAttrPos.put(key, table2NameTable.get(key) + table1Size);
-//			// newAttrPos.put(key, table2NameTable.get(key));
-//		}
-
 		tupleList = new TupleStack(); 
-
-//		tupleList.setAttrPosTable(newAttrPos);
 
 		//set selectattrList
 		ArrayList<String> newSelectAttrs = new ArrayList<String>();
@@ -1266,60 +1243,44 @@ public class DBExecutor{
 					//Table2 join Table1
 					//search index in table1 that match 
 					//to attr in tuple of table2
-//					for(Tuple tuple2: table2){
-						for(int j=0;j< table2.size();j++){
-							Tuple tuple2 = table2.get(j);
-							Integer target = joinColumn2.get(j);
+				for(int j=0;j< table2.size();j++){
+					Tuple tuple2 = table2.get(j);
+					Integer target = joinColumn2.get(j);
 //							System.out.println(target.getInt());
-							int find = -1;
-							if(map1.get(target)!=null)
-								find = map1.get(target);
-//							System.out.println("find"+find);
-							
-							if(find!=-1)
-							{
-								Tuple combinedTuple = new Tuple(tuple2);
-								combinedTuple.addAll(table1.get(find));
-								tupleList.add(combinedTuple);
+					int find = -1;
+					if(map1.get(target)!=null)
+						find = map1.get(target);
+//							System.out.println("find"+find);							
+					if(find!=-1)
+					{
+						Tuple combinedTuple = new Tuple(tuple2);
+						combinedTuple.addAll(table1.get(find));
+						tupleList.add(combinedTuple);
 //								System.out.println("add tuple"+ combinedTuple);
-								
-							}
-							
-							
 						
-					}//end outer for
+					}	
+				}//end outer for
 						return tupleList;
 				}
 				else{
 //					System.out.println("1 to 2 "+tableName1+"join "+tableName2+" "+newSelectAttrs);
-
-//					for(Tuple tuple1: table1){
 					for(int j=0;j< table1.size();j++){
-//						ArrayList<Integer> toBeJoinIndex = new ArrayList <Integer>();
-						
-//						for(Value target:joinColumn1)
-//							{
 						Tuple tuple1 = table1.get(j);
 						Integer target = joinColumn1.get(j);
-//								for(int i =0;i<joinColumn2.size();++i)
-//								{
 //									System.out.println(target.getInt());
-									int find = -1;
-									if(map2.get(target)!=null)
-									find = map2.get(target);
-									if(find!=-1)
-									{
-										Tuple combinedTuple = new Tuple(tuple1);
-										combinedTuple.addAll(table2.get(find));
-										tupleList.add(combinedTuple);
+						int find = -1;
+						if(map2.get(target)!=null)
+						find = map2.get(target);
+						if(find!=-1)
+						{
+							Tuple combinedTuple = new Tuple(tuple1);
+							combinedTuple.addAll(table2.get(find));
+							tupleList.add(combinedTuple);
 //										System.out.println("add tuple"+ combinedTuple);
 
-									}
+						}
 
-//								}
-//							}
-						
-					}//end outer for
+					}//end  for
 
 				}
 			}
