@@ -20,4 +20,11 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>JavaLib</name>
+			<type>2</type>
+			<location>C:/Users/Melpomene/git/miniDBMS/JavaLib</location>
+		</link>
+	</linkedResources>
 </projectDescription>

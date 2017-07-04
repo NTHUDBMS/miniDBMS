@@ -1134,24 +1134,24 @@ public class DBExecutor{
 		
 	}
 
-	/**
-	 * Cartesian Product<br>
-	 * will create new tupleStack by combining two tupleStack<br>
-	 * Join is completed here <br>
-	 * @param allTables
-	 * @return
-	 */
-	private TupleStack cartesianProduct(LinkedList<TupleStack> allTables,Condition condition){
-
-		while(allTables.size() >= 2){
-			TupleStack combinedTable = cartesianProduct(allTables.get(0), allTables.get(1), condition);
-			allTables.removeFirst();
-			allTables.removeFirst();
-			allTables.addFirst(combinedTable);
-		}
-		
-		return allTables.get(0);
-	}
+//	/**
+//	 * Cartesian Product<br>
+//	 * will create new tupleStack by combining two tupleStack<br>
+//	 * Join is completed here <br>
+//	 * @param allTables
+//	 * @return
+//	 */
+//	private TupleStack cartesianProduct(LinkedList<TupleStack> allTables,Condition condition){
+//
+//		while(allTables.size() >= 2){
+//			TupleStack combinedTable = cartesianProduct(allTables.get(0), allTables.get(1), condition);
+//			allTables.removeFirst();
+//			allTables.removeFirst();
+//			allTables.addFirst(combinedTable);
+//		}
+//		
+//		return allTables.get(0);
+//	}
 
 	
 	private TupleStack cartesianProduct(TupleStack table1, TupleStack table2,Condition condition,ArrayList<String>tableName){
