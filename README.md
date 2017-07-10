@@ -5,7 +5,7 @@ GIT repository: https://github.com/NTHUDBMS/miniDBMS.git
 
 Member: 
 -----------------------------------------------------------
-	Paul, Shawn(蔡宇翔), Mike(張書正)
+	Shawn(蔡宇翔), Mike(張書正)
 
 Description:
 -----------------------------------------------------------
@@ -38,12 +38,13 @@ Execute Steps:
 	(project_dir)\Testbench\DBDemo3\stopwords.sql
 	(project_dir)\Testbench\DBDemo3\testDemo3.sql
 
-	5.Main is in "dbms.DBMS.java", open it and execute
+    or could use any one of argumets*.txt
+
+    5.right click Sql.g4, Run as, Generate Antlr Recognizer
+      set only once, need to rerun after edit Sql.g4
+
+	6.Main is in "dbms.DBMS.java", open it and execute
 	
-	6.The result should be displace on Console
+	7.The result should be displace on Console
 	
-	P.S.
-	After execution, it will generate ".db" ".dat" file by 
-	CREATE INSERT commands. 
-	If you want to run again, delete them
 
