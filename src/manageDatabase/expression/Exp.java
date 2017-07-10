@@ -30,11 +30,7 @@ public class Exp implements java.io.Serializable{
 	 * @param tuple
 	 * @return
 	 */
-	public Object accept(
-			DBExecutor visitor, 
-			Hashtable<String, Integer> attrPosTable, 
-			Tuple tuple) 
-	{
+	public Object accept( DBExecutor visitor, Hashtable<String, Integer> attrPosTable, Tuple tuple) {
 		return visitor.visit(this, attrPosTable, tuple); 
 	}
 

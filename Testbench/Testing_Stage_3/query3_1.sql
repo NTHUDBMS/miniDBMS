@@ -1,0 +1,3 @@
+SELECT COUNT(*)
+FROM user1
+WHERE user1.attr3 > 100000 AND user1.attr3 < 200000;

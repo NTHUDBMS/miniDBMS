@@ -2,9 +2,10 @@
 *.classpath
 *.dat
 *.db
-Output.txt
+./Output.txt
 *.DS_Store
 *.txt
+*.jar
 
 
 bin/

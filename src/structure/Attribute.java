@@ -51,7 +51,7 @@ public class Attribute implements Serializable {
 	/**
 	 * Data stored under this attribute
 	 */
-	private ArrayList<Value> columnList = null;
+	private ArrayList<Value> columnList;
 	
 	/**
 	 * Constructor with specified length
@@ -74,7 +74,18 @@ public class Attribute implements Serializable {
 		this(type,attrName,0);
 	}
 	
-	/**
+	public Attribute(Attribute attribute) {
+	    this.name = attribute.name;
+	    this.type = attribute.type;
+	    this.length = attribute.length;
+    }
+
+    @Override
+    public String toString() {
+        return "Attribute [name=" + name + "]";
+    }
+
+    /**
 	 * 
 	 * @return name of attribute
 	 */
@@ -149,7 +160,14 @@ public class Attribute implements Serializable {
 			return false;
 		
 	}
-
+	
+	public boolean equals(String o) {
+	    if (this.name.equals(o)) {
+	        return true;
+	    }
+	    else return false;
+	}
+	
 	/**
 	 * 
 	 * @return the data store under this attribute

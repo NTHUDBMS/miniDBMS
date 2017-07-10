@@ -7,7 +7,14 @@ import java.io.Serializable;
  *
  */
 public class TupleFile implements Serializable {
-	/**
+	@Override
+    public String toString() {
+        return "TupleFile [tupleStack=" + tupleStack + ", tableName="
+                + tableName + "]";
+    }
+
+
+    /**
 	 * ???
 	 */
 	private static final long serialVersionUID = 1L;
@@ -48,10 +55,7 @@ public class TupleFile implements Serializable {
 	 * @param tableName
 	 * @param tupleStack
 	 */
-	public TupleFile(
-			String tableName,
-			TupleStack tupleStack) 
-	{
+	public TupleFile(String tableName, TupleStack tupleStack) {
 		this.tableName = tableName;
 		this.setTupleStack(tupleStack);
 	}
@@ -63,7 +67,11 @@ public class TupleFile implements Serializable {
 
 
 	public void setTupleStack(TupleStack tupleStack) {
-		this.tupleStack = tupleStack;
+	    // do full copy
+	    this.tupleStack = new TupleStack(tupleStack.getAttrList());
+	    for (Tuple t: tupleStack) {
+	        this.tupleStack.add(new Tuple(t));
+	    }
 	}
 
 }

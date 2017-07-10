@@ -1,12 +1,6 @@
 grammar Sql;
 
 @header {
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //!!!                                                            !!!
-    //!!! THIS CODE IS AUTOMATICALLY GENERATED! DO NOT MODIFY!       !!!
-    //!!! Please refer to file Example.g4 for grammar documentation. !!!
-    //!!!                                                            !!!
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	
 import java.util.*;
 import java.io.*;
@@ -18,8 +12,6 @@ import dbms.*;
 
 @parser::members {
 	
-private final static int maxTuple = 100;
-private final static int maxAttr = 5;
 private final static DBExecutor executor = new DBExecutor();
 private boolean inValid;
 
@@ -104,7 +96,10 @@ start
 	)* EOF
 ;
 
-instructions @init { inValid = false;}
+instructions @init { 
+	inValid = false;
+	
+}
 :
 	create_table
 	{execute($create_table.query);}
@@ -368,7 +363,7 @@ insert_into returns [Query query]
 			
 			// fetch table from hash
 			try{
-				$table = executor.getTableByName(tableName);
+				$table = DBMS.executor.getTableByName(tableName);
 			}catch(Exception e){}
 			
 			if($table==null){
@@ -391,7 +386,7 @@ insert_into returns [Query query]
 			
 			// fetch table from hash
 			try{
-				$table = executor.getTableByName(tableName);
+				$table = DBMS.executor.getTableByName(tableName);
 			}catch(Exception e){}
 			
 			// check table exist, and initialize valueList to collect values
@@ -495,6 +490,7 @@ locals [
 	$aggregate = Select.Aggregation.NON;
 
 }
+
 @after{
 	DBMS.outConsole("---------------");
 }

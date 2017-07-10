@@ -21,7 +21,13 @@ public class Tuple extends ArrayList<Value>{
 		super();
 	}
 	
-	public Tuple(ArrayList<Value>data){
+	public Tuple(ArrayList<Value> data){
 		super(data);
+	}
+	
+	public Tuple(Tuple t) {
+	    for (Value v: t) {
+	        this.add(new Value(v));
+	    }
 	}
 }

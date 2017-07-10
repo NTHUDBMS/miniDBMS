@@ -2,6 +2,7 @@ package manageDatabase.expression;
 
 
 import java.util.ArrayList;
+import java.util.List;
 /**
  * Condition class which store the restrictions specified in where clause<br>
  */
@@ -14,80 +15,80 @@ public class Condition implements java.io.Serializable{
 	 * Expression
 	 */
 	private Exp exp;
-	
-
-	private ArrayList<String> idList;
-	private ArrayList<String> tableList;
-	private ArrayList<Exp> rangeExpList; // op is > <
-	private Exp joinExp;//will be binaryExp type
-
-	public Exp getJoinExp()
-	{
-		return joinExp;
-	}
-	public void setJoinExp(Exp exp)
-	{
-//		System.out.println("setting join");
-		if (exp instanceof BinaryExp
-		)
-		{
-//			System.out.println("needAdd");
-			Exp left = ((BinaryExp) exp).getLeft();
-			Exp right = ((BinaryExp) exp).getRight();
-			
-			if(
-				((BinaryExp) exp).getLeft() instanceof ColExp
-				&& 
-				((BinaryExp) exp).getRight() instanceof ColExp
-			  )
-			{
-				String op = ((BinaryExp) exp).getOp();
-				if(op.equals("="))
-				{
-					joinExp = exp;
-//					System.out.println("set succeed");
-					return;
-				}
-			}
-			
-			else
-				{
-					setJoinExp(left);
-					setJoinExp(right);
-				}
-			
-		}
-	}
-
-	public ArrayList<Exp> getRangeExpList() {
-		return rangeExpList;
-	}
-
-
-	public void setRangeExpList(ArrayList<Exp> expList) {
-		this.rangeExpList = expList;
-	}
-
-
-	public ArrayList<Exp> getHashExpList() {
-		return hashExpList;
-	}
-
-	public void setHashExpList(ArrayList<Exp> expList) {
-		this.hashExpList = expList;
-	}
+	private List<String> idList;
+	private List<String> tableList;
+	private List<Exp> rangeExpList; // op is > <
+	private List<Exp> hashExpList; //op is =
+	private List<Exp> joinExpList; // op is = and left is ColExp right is ColExp 
 	
 	
-	private ArrayList<Exp> hashExpList; //op is ==
 
 	/**
 	 * Constructor with expression
 	 * @param exp
 	 */
 	public Condition(Exp exp){
+	    this.rangeExpList = new ArrayList<>();
+	    this.hashExpList = new ArrayList<>();
+		this.tableList = new ArrayList<String>();
+		this.idList =  new ArrayList<String>();
+		this.joinExpList = new ArrayList<>();
 		this.exp = exp;
+		this.setCompareExpList(this.exp);
+		this.setJoinExp(this.exp);
+	}
+	
+	public boolean isJoin() {
+	    if (exp instanceof BinaryExp) return ((BinaryExp) exp).isJoin();
+	    else return false;
+	}
+	
+	public void setJoinExp(Exp exp) {
+        if(exp == null)
+			return;
+		else if (exp instanceof IdExp)
+			return;
+		else if(exp instanceof ColExp)
+			return;
+		if (exp instanceof BinaryExp) {
+			Exp left = ((BinaryExp) exp).getLeft();
+			Exp right = ((BinaryExp) exp).getRight();
+			if( left instanceof ColExp && right instanceof ColExp ) {
+			    String op = ((BinaryExp) exp).getOp();
+			    if (op.equals("=")) {
+			        this.joinExpList.add(exp);
+			    }
+			}
+			else {
+				setJoinExp(((BinaryExp) exp).getLeft());
+				setJoinExp(((BinaryExp) exp).getRight());
+			}
+		}
 	}
 
+	// now we only have one join exp
+	public Exp getJoinExp() {
+	    return this.joinExpList.get(0);
+	}
+	
+
+	public List<Exp> getRangeExpList() {
+		return rangeExpList;
+	}
+
+
+	public void setRangeExpList(List<Exp> expList) {
+		this.rangeExpList = expList;
+	}
+
+	public List<Exp> getHashExpList() {
+		return hashExpList;
+	}
+
+	public void setHashExpList(List<Exp> expList) {
+		this.hashExpList = expList;
+	}
+	
 	
 	public Exp getExp(){
 		return this.exp;
@@ -97,51 +98,50 @@ public class Condition implements java.io.Serializable{
 	 * 
 	 * @return 
 	 */
-	public ArrayList<String> getIdList(){
-//		ArrayList<String> idList = new ArrayList<String>();
-		this.idList =  new ArrayList<String>();
-		this.tableList = new ArrayList<String>();
+	public List<String> getIdList(){
 		getIdList(this.idList, this.exp);
 //		System.out.println("final Id list size is "+ idList.size());
 		return this.idList;
 	}
+	
+	public List<Exp> getCompareExpList() {
+	    List<Exp> l = new ArrayList<>();
+	    l.addAll(this.hashExpList);
+	    l.addAll(this.rangeExpList);
+	    return l;
+	}
+	
+
 	/**
 	 * compare with generic String or integer 
 	 * can be used for the condition focusing on
 	 * hashing index or range search
 	 */
-	public void setcompareExpList(Exp exp)
-	{
+	public void setCompareExpList(Exp exp) {
 		if(exp == null)
 			return;
 		else if (exp instanceof IdExp)
 			return;
 		else if(exp instanceof ColExp)
 			return;
-		if(exp instanceof BinaryExp)
-		{
+		if (exp instanceof BinaryExp) {
 			Exp left = ((BinaryExp) exp).getLeft();
 			Exp right = ((BinaryExp) exp).getRight();
-			if((left instanceof IntExp | left instanceof StrExp) 
-				| (right instanceof IntExp | right instanceof StrExp)
-					)
-			{
+			if((left instanceof IntExp || left instanceof StrExp) 
+				|| (right instanceof IntExp || right instanceof StrExp)) {
 				String op = ((BinaryExp) exp).getOp();
-				if (op.equals(">")|op.equals("<")|op.equals("<>"))
-				{
+				if (op.equals(">") || op.equals("<")||op.equals("<>")) {
 					this.rangeExpList.add(exp);
 				}
-				else if(op.equals("="))
-				{
+				else if(op.equals("=")) {
 					this.hashExpList.add(exp);
 				}
 			}
-			else{
-				setcompareExpList(((BinaryExp) exp).getLeft());
-				setcompareExpList(((BinaryExp) exp).getRight());
+			else {
+				setCompareExpList(((BinaryExp) exp).getLeft());
+				setCompareExpList(((BinaryExp) exp).getRight());
 			}
 		}
-		else return;
 	}
 	
 
@@ -150,7 +150,7 @@ public class Condition implements java.io.Serializable{
 	 * @param idList : identifier list
 	 * @param exp : 
 	 */
-	private void getIdList(ArrayList<String> idList, Exp exp){
+	private void getIdList(List<String> idList, Exp exp){
 		if(exp == null)
 			return;
 		//attribute
@@ -175,8 +175,8 @@ public class Condition implements java.io.Serializable{
 		
 		if(exp instanceof BinaryExp){
 			//boolean ret;
-			getIdList(idList, ((BinaryExp) exp).getLeft() );
-			getIdList(idList, ((BinaryExp) exp).getRight() );
+			getIdList(idList, ((BinaryExp) exp).getLeft());
+			getIdList(idList, ((BinaryExp) exp).getRight());
 		}
 	}
 
@@ -218,7 +218,7 @@ public class Condition implements java.io.Serializable{
 	}
 
 
-	public ArrayList<String> getTableList() {
+	public List<String> getTableList() {
 		return tableList;
 	}
 
@@ -226,8 +226,5 @@ public class Condition implements java.io.Serializable{
 	public void setTableList(ArrayList<String> tableList) {
 		this.tableList = tableList;
 	}
-
-	
-
 
 }

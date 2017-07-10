@@ -49,7 +49,11 @@ public class Table implements Serializable {
 	/**
 	 * ?? WTF is this
 	 */
-	private ArrayList<String> subSchemaList = null;
+	private List<String> subSchemaList = null;
+	
+	
+	private TupleStack tuples;
+	
 	
 	/**
 	 * 
@@ -58,13 +62,11 @@ public class Table implements Serializable {
 	 * @param primaryList : primary key position
 	 * @param attrPosTable : attribute position
 	 */
-	public Table(
-			String tableName, 
+	public Table(String tableName, 
 			ArrayList<Attribute> attrList, 
 			ArrayList<Integer> primaryList,
-			Hashtable<String, Integer> attrPosTable
-			) 
-	{
+			Hashtable<String, Integer> attrPosTable) {
+	    
 		if(tableName!=null)
 			this.tablename = tableName;
 		else
@@ -73,7 +75,8 @@ public class Table implements Serializable {
 		if(attrList!=null){
 			this.attrList = new ArrayList<Attribute>();
 			this.attrList.addAll(attrList);
-		}else
+		}
+		else
 			DBMS.outConsole("* attrList null");
 		
 		if(primaryList!=null){
@@ -89,8 +92,9 @@ public class Table implements Serializable {
 		}
 		else
 			DBMS.outConsole("* attrPosTable null");
+		this.setTuples(new TupleStack(attrList));
+		
 	}
-	
 	
 	public String getTableName() {
 		return this.tablename;
@@ -100,11 +104,12 @@ public class Table implements Serializable {
 	}
 
 	
-	public ArrayList<Attribute> getAttrList() {
+	public List<Attribute> getAttrList() {
 		return this.attrList;
 	}
 	public void setAttrList(ArrayList<Attribute> attrList) {
 		this.attrList = attrList;
+		this.tuples.setAttrList(attrList);
 	}
 
 
@@ -129,12 +134,15 @@ public class Table implements Serializable {
 	 * @return
 	 */
 	public int getAttrPos(String valueName){
-		if(this.attrPosTable.containsKey(valueName))
-		{
+		if(this.attrPosTable.containsKey(valueName)) {
 			return this.attrPosTable.get(valueName).intValue();
-		}else{
+		} else{
 			return -1;
 		}	
+	}
+	
+	public boolean containAttr(String attribute) {
+	    return attrPosTable.containsKey(attribute);
 	}
 
 	/**
@@ -149,8 +157,18 @@ public class Table implements Serializable {
 		this.subSchemaList = subSchemaList;
 	}
 
-	public ArrayList<String> getSubschemaList(){
+	public List<String> getSubschemaList(){
 		return this.subSchemaList;
 	}
+
+
+    public TupleStack getTuples() {
+        return tuples;
+    }
+
+
+    public void setTuples(TupleStack tuples) {
+        this.tuples = tuples;
+    }
 	
 }

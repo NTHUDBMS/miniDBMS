@@ -7,7 +7,12 @@ import dbms.DBExecutor;
  *
  */
 public class StrExp extends Exp{
-	/**
+	@Override
+    public String toString() {
+        return "[str=" + str + "]";
+    }
+
+    /**
 	 * 
 	 */
 	private static final long serialVersionUID = 147286827298234L;

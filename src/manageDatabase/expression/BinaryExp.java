@@ -37,8 +37,26 @@ public class BinaryExp extends Exp{
 		this.right = right;
 		this.op = op;
 	}
+	
+	public boolean isJoin() {
+	    if (op.equals("="))
+	        return true;
+	    if (left instanceof BinaryExp) {
+	        return ((BinaryExp) left).isJoin();
+	    }
+	    if (right instanceof BinaryExp) {
+	        return ((BinaryExp) right).isJoin();
+	    }
+	    return false;
+	}
 
-	public Exp getLeft(){
+	@Override
+    public String toString() {
+        return "[" + left + " " + op
+                + " " + right+ "]";
+    }
+
+    public Exp getLeft(){
 		return this.left;
 	}
 
@@ -63,8 +81,7 @@ public class BinaryExp extends Exp{
 			Value value,
 			Hashtable<String, 
 			Integer> attrPosTable, 
-			Tuple tuple) 
-	{
+			Tuple tuple) {
 		return visitor.visit(this, value, attrPosTable, tuple); 
 	}
 }

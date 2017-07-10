@@ -24,7 +24,12 @@ public class ColExp extends Exp{
 		return colomnName;
 	}
 
-	public void setColomnName(String colomnName) {
+	@Override
+    public String toString() {
+        return tableName + "." + colomnName;
+    }
+
+    public void setColomnName(String colomnName) {
 		this.colomnName = colomnName;
 	}
 

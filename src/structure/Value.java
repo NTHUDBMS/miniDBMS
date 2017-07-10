@@ -1,11 +1,14 @@
 package structure;
+
+import com.google.common.base.Objects;
+
 /**
  * 
  * Value implement Serializable<br>
  * this structure is the basic data element in database
  * 
  */
-public class Value implements java.io.Serializable {
+public class Value implements java.io.Serializable, Comparable<Value> {
 
 	/**
 	 * 
@@ -36,6 +39,7 @@ public class Value implements java.io.Serializable {
 		this.isNull = true;
 	}
 	
+	
 	/**
 	 * Construct by integer
 	 * @param intValue : integer value
@@ -54,6 +58,20 @@ public class Value implements java.io.Serializable {
 		this.charValue = charValue;
 		this.type = Attribute.Type.CHAR;
 		this.isNull = false;
+	}
+	
+	public Value(Value value) {
+	    if (value.type == Attribute.Type.CHAR) {
+	        this.charValue = value.charValue;
+	        this.isNull = false;
+	        this.type = Attribute.Type.CHAR;
+	    }
+	    else {
+	        this.intValue = value.intValue;
+	        this.isNull = false;
+	        this.type = Attribute.Type.INT;
+	    }
+           
 	}
 
 	/**
@@ -100,28 +118,58 @@ public class Value implements java.io.Serializable {
 	 * @return
 	 *  TRUE if same type & same value<br>
 	 */
-	public boolean equals(Value value){
-
+	public boolean equals(Object obj){
+	    if (this == obj) {
+	        return true;
+	    }
+	    if (obj == null) {
+	        return false;
+	    }
+	    if (getClass() != obj.getClass()) {
+	        return false;
+	    }
+	    Value value = (Value) obj;
 		if(value.getType() == this.type){
 			if(this.type == Attribute.Type.CHAR){
 				if(value.getChar().equals(this.getChar())){
 					return true;
 				}
-			}else if(this.type == Attribute.Type.INT){
+			} 
+			else if(this.type == Attribute.Type.INT){
 				if(value.getInt() == this.getInt()){
 					return true;
 				}
-			}else{
-				return false;
-			}
-		}else{
-			return false;
+			} 
 		}
-		return false;
+        return false;
+	}
 
+	@Override
+	public int hashCode() {
+	    int result = 37;
+	    if (this.type == Attribute.Type.CHAR) {
+	        result += this.charValue.hashCode() * 37;
+        }
+	    else if (this.type == Attribute.Type.INT) {
+	        result += this.intValue * 37;
+	    }
+//        System.out.println(result);
+	    return result;
 	}
 
 	public boolean isNull() {
 		return isNull;
 	}
+
+
+    @Override
+    public int compareTo(Value o) {
+        if (this.type == Attribute.Type.CHAR) {
+            return this.charValue.compareTo(o.charValue);
+	    }
+	    else if (this.type == Attribute.Type.INT) {
+	        return this.intValue - o.intValue;
+	    }
+        return 0;
+    }
 }

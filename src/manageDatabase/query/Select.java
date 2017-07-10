@@ -68,15 +68,9 @@ public class Select extends Query{
 	 * @param attrList2
 	 * @param tableNames
 	 * @param cond
+	 * @param aggregateMode
 	 */
-	public Select(
-			ArrayList<String> attrList,
-			ArrayList<Integer> attrTableRelation,
-			ArrayList<String> tableNames,
-			Condition cond,
-			Aggregation aggregateMode) 
-	{
-		this.queryName = "SELECT";
+	public Select(ArrayList<String> attrList, ArrayList<Integer> attrTableRelation, ArrayList<String> tableNames, Condition cond, Aggregation aggregateMode) { this.queryName = "SELECT";
 		this.tableNames = tableNames;
 		this.attrList = attrList;
 		this.attrTableRelation = attrTableRelation;

@@ -12,7 +12,11 @@ public class IdExp extends Exp{
 	 * Identifier
 	 */
 	private String id;
-	/**
+	@Override
+    public String toString() {
+        return id;
+    }
+    /**
 	 * 
 	 */
 	private static final long serialVersionUID = 184721213445224L;
